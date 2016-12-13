@@ -4,11 +4,9 @@ language: python
 
 addons:
   apt:
-    sources:
-      - ubuntu-toolchain-r-test
+#    sources:
+#      - ubuntu-toolchain-r-test
     packages:
-      - gcc-4.8
-      - g++-4.8
       - python-dev
       - libcec-dev
 sudo: required
@@ -18,8 +16,8 @@ sudo: required
 
 python:
   - "2.7.12"
-  - "3.4"
-  - "3.5"
+#  - "3.4"
+#  - "3.5"
   #- "3.5-dev" # 3.5 development branch
   #- "3.6-dev" # 3.6 development branch
   #- "nightly" # currently points to 3.7-dev
