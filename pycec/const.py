@@ -26,6 +26,7 @@ VENDORS = {0x000039: 'Toshiba',
            0x8065E9: 'Benq',
            0x9C645E: 'HarmanKardon',
            0: 'Unknown'}
+
 CEC_LOGICAL_TO_TYPE = [0,  # TV0
                        1,  # Recorder 1
                        1,  # Recorder 2
@@ -42,4 +43,5 @@ CEC_LOGICAL_TO_TYPE = [0,  # TV0
                        2,  # Reserved 2
                        2,  # Free use
                        2]  # Broadcast
+
 DEVICE_TYPE_NAMES = ["TV", "Recorder", "UNKNOWN", "Tuner", "Playback", "Audio"]
