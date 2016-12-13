@@ -17,15 +17,17 @@ python:
 before_install:
 #  - sudo apt-get -qq update
 #  - sudo apt-get install qemu-user-static
+  - sudo apt-get update
+  - sudo apt-cache search libcec
   - sudo apt-get -y install libcec-dev python-pip python-dev libcec-platform-dev libcec3
 
 
 install:
+  - pip install cec
   - pip install .
   #- pip install -r test_requirements.txt --use-mirrors
   - pip install coveralls
   - pip install pytest-cov
-  - pip install cec
   - python setup.py -q install
 # command to run tests
 script:
