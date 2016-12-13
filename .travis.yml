@@ -2,7 +2,16 @@ language: python
 #env:
 #  - ARCH=arm
 
-sudo: required
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-4.8
+      - g++-4.8
+      - python-dev
+      - libcec-dev
+#sudo: required
 
 #services:
 #  - docker
@@ -15,10 +24,14 @@ python:
   #- "3.6-dev" # 3.6 development branch
   #- "nightly" # currently points to 3.7-dev
 # command to install dependencies
+
+#before_install:
+#  - sudo apt-get -qq update
+#  - sudo apt-get install qemu-user-static
+#  - sudo apt-get -y install libcec-dev python-dev
+
+
 install:
-  - sudo apt-get update
-  - sudo apt-get install qemu-user-static
-  - sudo apt-get -y install libcec-dev python-dev
   - pip install .
   #- pip install -r test_requirements.txt --use-mirrors
   - pip install coveralls
