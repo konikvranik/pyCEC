@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 PACKAGES = find_packages(exclude=['tests', 'tests.*', 'build'])
 
 REQUIRES = [
-    'cec',
+    #'cec',
 ]
 
 
@@ -25,16 +25,18 @@ setup(
     author="Petr Vraník",
     author_email="hpa@suteren.net",
     description=(
-    "Provide HDMI CEC devices as objects, especially for use with Home Assistant"),
-    license="BSD",
-    keywords="cec hdmi come-assistant",
+        "Provide HDMI CEC devices as objects, especially for use with Home Assistant"),
+    license="MIT",
+    keywords="cec hdmi home-assistant",
     url="https://github.com/konikvranik/pycec/",
-    packages=find_packages(),
+    packages=PACKAGES,
+    install_requires=REQUIRES,
     long_description=read('README.md'),
     test_suite='tests',
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: Utilities",
-        "License :: OSI Approved :: BSD License",
+        "License :: OSI Approved :: MIT License",
+        'Programming Language :: Python :: 3.4',
     ],
 )
