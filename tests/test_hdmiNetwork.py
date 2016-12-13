@@ -18,6 +18,9 @@ class TestHdmiNetwork(TestCase):
         self.assertEqual(device.name, '')
         device.request_name()
         self.assertEqual(device.name, "Test")
+        self.assertEqual(device.power_status, 0)
+        device.request_power_status()
+        self.assertEqual(device.power_status, 2)
 
     def test_devices(self):
         network = HdmiNetwork(MockAdapter(
@@ -58,7 +61,7 @@ class MockAdapter:
         response = CecCommand(src=command.dst, dst=command.src)
         if command.cmd == CMD_POWER_STATUS[0]:
             response.cmd = CMD_POWER_STATUS[1]
-            response.att = [1]
+            response.att = [2]
             self._config.GetCommandCallback()(response.raw)
         elif command.cmd == CMD_OSD_NAME[0]:
             response.cmd = CMD_OSD_NAME[1]

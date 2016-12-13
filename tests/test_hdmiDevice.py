@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from pycec.datastruct import CecCommand
-from const import CMD_POWER_STATUS, CMD_VENDOR, CMD_OSD_NAME, CMD_PHYSICAL_ADDRESS
+from pycec.const import CMD_POWER_STATUS, CMD_VENDOR, CMD_OSD_NAME, CMD_PHYSICAL_ADDRESS
 
 from pycec import HdmiDevice
 
