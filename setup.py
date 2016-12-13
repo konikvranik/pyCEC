@@ -1,5 +1,12 @@
+#!/usr/bin/env python3
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
+
+PACKAGES = find_packages(exclude=['tests', 'tests.*'])
+
+REQUIRES = [
+    'cec',
+]
 
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level
@@ -19,6 +26,10 @@ setup(
     url = "https://github.com/konikvranik/pycec/",
     packages=['pycec', 'tests'],
     long_description=read('README.md'),
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest'],
+    test_suite='tests',
+    test_loader='pytest',
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: Utilities",
