@@ -113,7 +113,7 @@ class HdmiNetwork:
                   filter(lambda x: x[0] not in self._devices, filter(lambda x: x[1], self._device_status.items()))}
         self._devices.update(items_)
 
-    def request_update(self, who, what):
+    def request_update(self, who: int, what: int):
         self._adapter.Transmit(
             self._adapter.CommandFromString(CecCommand(what, who, self.local_address()).raw))
 
