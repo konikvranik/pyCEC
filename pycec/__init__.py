@@ -104,6 +104,7 @@ class HdmiNetwork:
         self._adapter = adapter
         self._device_status = dict()
         self._devices = dict()
+        adapter.GetCurrentConfiguration().SetCommandCallback(self.command_callback)
         pass
 
     def scan(self):
@@ -128,13 +129,11 @@ class HdmiNetwork:
 
     def command_callback(self, raw_command: str):
         command = CecCommand(raw_command)
-        if command.dst == 15:
+        if command.src == 15:
             for i in range(15):
                 self.get_device(i).update(command)
         else:
-            self.get_device(command.dst).update(command)
-
-        pass
+            self.get_device(command.src).update(command)
 
 
 class CecClient:
