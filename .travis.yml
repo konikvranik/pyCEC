@@ -11,6 +11,7 @@ install:
   #- pip install -r test_requirements.txt --use-mirrors
   - pip install coveralls
   - pip install codeclimate-test-reporter
+  - python setup.py clean
   - python setup.py -q install
 
 # command to run tests
