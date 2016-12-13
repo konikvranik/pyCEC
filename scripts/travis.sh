@@ -63,6 +63,8 @@ else
   fi
 fi
 
+pip install -r requirements.txt
+
 echo "Running tests"
 echo "Environment: $(uname -a)"
 
