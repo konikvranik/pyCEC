@@ -21,6 +21,6 @@ install:
 # command to run tests
 script:
   - py.test coveralls/tests.py --doctest-modules --pep8 coveralls -v --cov coveralls --cov-report term-missing
-  - "bash -ex .travis-ci.sh" coverage run --source=pycec setup.py test
+  - bash -ex .travis-ci.sh coverage run --source=pycec setup.py test
 after_success:
   - coveralls
