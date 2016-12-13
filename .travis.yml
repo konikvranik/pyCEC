@@ -1,4 +1,6 @@
 language: python
+env:
+  - ARCH=arm
 python:
   - "3.4"
   - "3.5"
