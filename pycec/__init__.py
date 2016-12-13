@@ -7,8 +7,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class CecCommand:
-    def __init__(self, src: int() = None, dst: int() = None, cmd: int() = None,
-                 att: list([int()]) = None, raw: str() = None):
+    def __init__(self, src: int = None, dst: int = None, cmd: int = None,
+                 att: List[int] = None, raw: str = None):
         self._src = int()
         self._dst = int()
         self._cmd = int()
