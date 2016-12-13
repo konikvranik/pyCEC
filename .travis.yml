@@ -26,8 +26,8 @@ install:
 #  - pip install .
   #- pip install -r test_requirements.txt --use-mirrors
   - pip install coveralls
-  - pip install pytest-cov
-  - pip install python-coveralls
+  #- pip install pytest-cov
+  #- pip install python-coveralls
   - python setup.py -q install
 # command to run tests
 script:
