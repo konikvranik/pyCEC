@@ -2,15 +2,6 @@ language: python
 #env:
 #  - ARCH=arm
 
-addons:
-  apt:
-#    sources:
-#      - ubuntu-toolchain-r-test
-    packages:
-      - python-dev
-      - libcec-dev
-sudo: required
-
 #services:
 #  - docker
 
@@ -26,7 +17,7 @@ python:
 before_install:
 #  - sudo apt-get -qq update
 #  - sudo apt-get install qemu-user-static
-  - sudo apt-get -y install libcec-dev # python-dev
+  - sudo apt-get -y install libcec-dev python-pip python-dev
 
 
 install:
