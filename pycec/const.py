@@ -45,3 +45,13 @@ CEC_LOGICAL_TO_TYPE = [0,  # TV0
                        2]  # Broadcast
 
 DEVICE_TYPE_NAMES = ["TV", "Recorder", "UNKNOWN", "Tuner", "Playback", "Audio"]
+CMD_PHYSICAL_ADDRESS = (0x83, 0x84)
+CMD_POWER_STATUS = (0x8f, 0x90)
+CMD_AUDIO_STATUS = (0x71, 0x7a)
+CMD_VENDOR = (0x8c, 0x87)
+CMD_MENU_LANGUAGE = (0x91, 0x32)
+CMD_OSD_NAME = (0x46, 0x47)
+CMD_AUDIO_MODE_STATUS = (0x7d, 0x7e)
+CMD_DECK_STATUS = (0x1a, 0x1b)
+CMD_TUNER_STATUS = (0x07, 0x08)
+CMD_MENU_STATUS = (0x8d, 0x8e)

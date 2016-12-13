@@ -1,5 +1,7 @@
 from typing import List
 
+from functools import reduce
+
 
 class CecCommand:
     def __init__(self, cmd=None, dst: int = None, src: int = None,
@@ -70,18 +72,6 @@ class CecCommand:
         return self.raw
 
 
-CMD_PHYSICAL_ADDRESS = (0x83, 0x84)
-CMD_POWER_STATUS = (0x8f, 0x90)
-CMD_AUDIO_STATUS = (0x71, 0x7a)
-CMD_VENDOR = (0x8c, 0x87)
-CMD_MENU_LANGUAGE = (0x91, 0x32)
-CMD_OSD_NAME = (0x46, 0x47)
-CMD_AUDIO_MODE_STATUS = (0x7d, 0x7e)
-CMD_DECK_STATUS = (0x1a, 0x1b)
-CMD_TUNER_STATUS = (0x07, 0x08)
-CMD_MENU_STATUS = (0x8d, 0x8e)
-
-
 def _to_digits(x: int) -> List[int]:
     while x > 0:
         yield x % 0x10
@@ -95,7 +85,7 @@ class PhysicalAddress:
         if isinstance(address, (str,)):
             address = list(int(x, 16) for x in address.split(':'))
         if isinstance(address, (tuple, list,)):
-            self._physical_address = address[0] * 0x100 + address[1]
+            self._physical_address = reduce(lambda x, y: x * 0x100 + y, address)
         elif isinstance(address, (int,)):
             self._physical_address = address
 
