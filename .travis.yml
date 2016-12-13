@@ -29,6 +29,9 @@ install:
   - pip install pytest-cov
   - pip install python-coveralls
   - python setup.py -q install
+
+before_script:
+  - py.test --cov=pycec tests/
 # command to run tests
 script:
   # - docker run -it --rm -v /usr/bin/qemu-arm-static:/usr/bin/qemu-arm-static philipz/rpi-raspbian bash
