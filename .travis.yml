@@ -1,6 +1,7 @@
 language: python
 env:
   - ARCH=arm
+sudo: required
 python:
   - "3.4"
   - "3.5"
