@@ -8,6 +8,8 @@ from pycec.datastruct import PhysicalAddress, CecCommand
 
 _LOGGER = logging.getLogger(__name__)
 
+LIB_CEC = {}
+
 
 class HdmiDevice:
     def __init__(self, logical_address: int):
@@ -69,17 +71,29 @@ class HdmiDevice:
         elif command.cmd == CMD_OSD_NAME[1]:
             self._osd_name = "".join(map(lambda x: chr(x), command.att))
 
+    def __eq__(self, other):
+        return isinstance(other, (HdmiDevice,)) and self.logical_address == other.logical_address
+
+    def __hash__(self):
+        return self._logical_address
+
 
 class HdmiNetwork:
     def __init__(self, adapter):
+        self._adapter = adapter
+        self._device_status = dict()
+        self._devices = dict()
         pass
 
     def scan(self):
-        pass
+        self._device_status = {x: self._adapter.PollDevice(x) for x in range(15)}
+        items_ = {k: HdmiDevice(k) for (k, v) in
+                  filter(lambda x: x[0] not in self._devices, filter(lambda x: x[1], self._device_status.items()))}
+        self._devices.update(items_)
 
     @property
     def devices(self) -> List[HdmiDevice]:
-        pass
+        return self._devices.values()
 
 
 class CecClient:
