@@ -9,6 +9,7 @@ python:
 
 install:
   #- pip install -r test_requirements.txt --use-mirrors
+  - pip install .
   - pip install coveralls
   - pip install codeclimate-test-reporter
   - pip install pytest-cov
