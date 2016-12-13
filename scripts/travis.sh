@@ -64,6 +64,8 @@ else
 fi
 
 pip install -r requirements.txt
+pip install coveralls
+python setup.py -q install
 
 echo "Running tests"
 echo "Environment: $(uname -a)"
