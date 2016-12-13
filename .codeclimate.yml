@@ -3,23 +3,13 @@ engines:
     enabled: true
     config:
       languages:
-      - ruby
-      - javascript
       - python
-      - php
   fixme:
     enabled: true
   radon:
     enabled: true
 ratings:
   paths:
-  - "**.inc"
-  - "**.js"
-  - "**.jsx"
-  - "**.module"
-  - "**.php"
   - "**.py"
-  - "**.rb"
 exclude_paths: []
-exclude_fingerprints:
-  - 9f227f6dadc1f9452ae47f085759c54a
+exclude_fingerprints: [ "9f227f6dadc1f9452ae47f085759c54a" ]
