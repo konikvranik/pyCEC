@@ -12,7 +12,7 @@ LIB_CEC = {}
 
 
 class HdmiDevice:
-    def __init__(self, logical_address: int):
+    def __init__(self, logical_address: int, network=None):
         self._logical_address = logical_address
         self._physical_address = PhysicalAddress
         self._power_status = int()
@@ -28,6 +28,7 @@ class HdmiDevice:
         self._record_status = int()
         self._timer_cleared_status = int()
         self._timer_status = int()
+        self._network = network
 
     @property
     def logical_address(self) -> int:
@@ -61,6 +62,14 @@ class HdmiDevice:
     def is_off(self):
         return self.power_status == 0x01
 
+    @property
+    def network(self):
+        return self._network
+
+    @network.setter
+    def network(self, network):
+        self._network = network
+
     def update(self, command: CecCommand):
         if command.cmd == CMD_PHYSICAL_ADDRESS[1]:
             self._physical_address = PhysicalAddress(command.att)
@@ -70,6 +79,18 @@ class HdmiDevice:
             self._vendor_id = reduce(lambda x, y: x * 0x100 + y, command.att)
         elif command.cmd == CMD_OSD_NAME[1]:
             self._osd_name = "".join(map(lambda x: chr(x), command.att))
+
+    def request_power_status(self):
+        self.network.request_update(self.logical_address, CMD_POWER_STATUS[0])
+
+    def request_name(self):
+        self.network.request_update(self.logical_address, CMD_OSD_NAME[0])
+
+    def request_physical_address(self):
+        self.network.request_update(self.logical_address, CMD_PHYSICAL_ADDRESS[0])
+
+    def request_vendor(self):
+        self.network.request_update(self.logical_address, CMD_VENDOR[0])
 
     def __eq__(self, other):
         return isinstance(other, (HdmiDevice,)) and self.logical_address == other.logical_address
@@ -87,13 +108,33 @@ class HdmiNetwork:
 
     def scan(self):
         self._device_status = {x: self._adapter.PollDevice(x) for x in range(15)}
-        items_ = {k: HdmiDevice(k) for (k, v) in
+        items_ = {k: HdmiDevice(k, self) for (k, v) in
                   filter(lambda x: x[0] not in self._devices, filter(lambda x: x[1], self._device_status.items()))}
         self._devices.update(items_)
+
+    def request_update(self, who, what):
+        self._adapter.Transmit(
+            self._adapter.CommandFromString(CecCommand(what, who, self.local_address()).raw))
+
+    def local_address(self):
+        return self._adapter.GetLogicalAddresses().primary
 
     @property
     def devices(self) -> List[HdmiDevice]:
         return self._devices.values()
+
+    def get_device(self, i) -> HdmiDevice:
+        return self._devices[i]
+
+    def command_callback(self, raw_command: str):
+        command = CecCommand(raw_command)
+        if command.dst == 15:
+            for i in range(15):
+                self.get_device(i).update(command)
+        else:
+            self.get_device(command.dst).update(command)
+
+        pass
 
 
 class CecClient:
@@ -109,7 +150,8 @@ class CecClient:
         cecconfig.SetKeyPressCallback(self.cec_key_press_callback)
         cecconfig.SetCommandCallback(self.cec_command_callback)
 
-        lib_cec = None  # cec.ICECAdapter.Create(cecconfig)
+        import cec
+        lib_cec = cec.ICECAdapter.Create(cecconfig)
 
         # print libCEC version and compilation information
         _LOGGER.info("libCEC version " + lib_cec.VersionToString(
