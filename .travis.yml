@@ -32,7 +32,7 @@ install:
 # command to run tests
 script:
   # - docker run -it --rm -v /usr/bin/qemu-arm-static:/usr/bin/qemu-arm-static philipz/rpi-raspbian bash
-  - py.test coveralls/tests.py --doctest-modules --pep8 coveralls -v --cov coveralls --cov-report term-missing
+  # - py.test coveralls/tests.py --doctest-modules --pep8 coveralls -v --cov coveralls --cov-report term-missing
   - py.test --cov=pycec tests/
   - coverage run --source=pycec setup.py test
 after_success:
