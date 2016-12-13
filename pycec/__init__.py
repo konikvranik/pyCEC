@@ -1,8 +1,8 @@
 import logging
-
 from typing import List
 
-from datastruct import CecCommand, CMD_PHYSICAL_ADDRESS, PhysicalAddress, CMD_POWER_STATUS, CMD_VENDOR, CMD_OSD_NAME
+from pycec.datastruct import CMD_PHYSICAL_ADDRESS, PhysicalAddress, CMD_POWER_STATUS, CMD_VENDOR, CMD_OSD_NAME, \
+    CecCommand
 
 _LOGGER = logging.getLogger(__name__)
 
