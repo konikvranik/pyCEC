@@ -1,23 +1,27 @@
 import logging
 
-import cec
 from typing import List
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class CecCommand:
-    def __init__(self, src: int = None, dst: int = None, cmd: int = None,
+    def __init__(self, cmd=None, dst: int = None, src: int = None,
                  att: List[int] = None, raw: str = None):
+
         self._src = int()
         self._dst = int()
         self._cmd = int()
         self._att = list([int])
 
-        self.src = src or None
-        self.dst = dst or None
-        self.cmd = cmd or None
-        self.att = att or None
+        if isinstance(cmd, (str,)):
+            self.raw = cmd
+        else:
+            self.src = src or None
+            self.dst = dst or None
+            self.cmd = cmd or None
+            self.att = att or List(int)
+
         if raw is not None:
             self.raw = raw
 
@@ -47,7 +51,7 @@ class CecCommand:
 
     @property
     def att(self) -> List[int]:
-        return self._att
+        return self._att if self._att else []
 
     @att.setter
     def att(self, value: List[int]):
@@ -55,9 +59,8 @@ class CecCommand:
 
     @property
     def raw(self) -> str:
-        return "%1x%1x:%02x%s" % (
-            self.src, self.dst, self.cmd,
-            "".join(((":%02x" % i) for i in self.att)))
+        atts = "".join(((":%02x" % i) for i in self.att))
+        return "%1x%1x:%02x%s" % (self.src, self.dst, self.cmd, atts)
 
     @raw.setter
     def raw(self, value: str):
@@ -144,7 +147,7 @@ class HdmiDevice:
 
 
 class HdmiNetwork:
-    def __init__(self, adapter: cec.ICECAdapter):
+    def __init__(self, adapter):
         pass
 
     def scan(self):

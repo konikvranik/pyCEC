@@ -6,7 +6,7 @@ from pycec import PhysicalAddress, CecCommand
 class PyCecTests(unittest.TestCase):
     def testPhysicalAddress(self):
         pa = PhysicalAddress("8f:ab")
-        self.failUnless(("%s" % pa) == "8f:ab")
+        self.failUnless(("%s" % pa) == "8.f.a.b")
 
     def testCecCommand(self):
         cc = CecCommand("1f:90:02")
