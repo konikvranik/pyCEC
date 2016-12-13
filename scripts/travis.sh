@@ -63,6 +63,7 @@ else
   fi
 fi
 
+apt-get install libcec-dev
 pip install -r requirements.txt
 pip install coveralls
 python setup.py -q install
