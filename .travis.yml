@@ -13,8 +13,8 @@ install:
   - pip install coveralls
   - pip install codeclimate-test-reporter
   - pip install pytest-cov
-  - python setup.py clean
-  - python setup.py -q install
+  #- python setup.py -q install
+  #- python setup.py clean
 
 # command to run tests
 script:
