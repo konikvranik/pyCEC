@@ -1,1 +1,19 @@
 language: python
+python:
+  - "3.4"
+  - "3.5"
+  - "3.5-dev" # 3.5 development branch
+  - "3.6-dev" # 3.6 development branch
+  - "nightly" # currently points to 3.7-dev
+  # PyPy versions
+  - "pypy"
+  - "pypy"  # PyPy2 2.5.0
+  - "pypy3" # Pypy3 2.4.0
+  - "pypy-5.3.1"
+# command to install dependencies
+install:
+  - pip install .
+  - pip install -r requirements.txt
+  - python setup.py -q install
+# command to run tests
+script: pytest
