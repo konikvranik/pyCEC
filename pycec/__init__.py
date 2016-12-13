@@ -1,6 +1,6 @@
 import logging
 
-# import cec
+import cec
 from typing import List
 
 _LOGGER = logging.getLogger(__name__)
@@ -141,6 +141,18 @@ class HdmiDevice:
             pass
         elif command.cmd == CMD_OSD_NAME[1]:
             pass
+
+
+class HdmiNetwork:
+    def __init__(self, adapter: cec.ICECAdapter):
+        pass
+
+    def scan(self):
+        pass
+
+    @property
+    def devices(self) -> List[HdmiDevice]:
+        pass
 
 
 class CecClient:
