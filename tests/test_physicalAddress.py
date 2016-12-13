@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pycec import PhysicalAddress
+from pycec.datastruct import PhysicalAddress
 
 
 class TestPhysicalAddress(TestCase):

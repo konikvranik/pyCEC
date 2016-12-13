@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pycec import CecCommand
+from pycec.datastruct import CecCommand
 
 
 class TestCecCommand(TestCase):
