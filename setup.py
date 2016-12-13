@@ -29,7 +29,7 @@ setup(
     license="BSD",
     keywords="cec hdmi come-assistant",
     url="https://github.com/konikvranik/pycec/",
-    packages=['pycec'],
+    packages=find_packages(),
     long_description=read('README.md'),
     test_suite='tests',
     classifiers=[
