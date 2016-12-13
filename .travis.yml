@@ -17,10 +17,12 @@ install:
   - pip install .
   #- pip install -r test_requirements.txt --use-mirrors
   - pip install coveralls
+  - pip install pytest-cov
   - python setup.py -q install
 # command to run tests
 script:
-  - py.test coveralls/tests.py --doctest-modules --pep8 coveralls -v --cov coveralls --cov-report term-missing
+  #- py.test coveralls/tests.py --doctest-modules --pep8 coveralls -v --cov coveralls --cov-report term-missing
+  - py.test --cov=pycec tests/
   - bash -ex scripts/travis.sh coverage run --source=pycec setup.py test
 after_success:
   - coveralls
