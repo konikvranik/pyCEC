@@ -11,12 +11,14 @@ install:
   #- pip install -r test_requirements.txt --use-mirrors
   - pip install coveralls
   - pip install codeclimate-test-reporter
+  - pip install pytest-cov
   - python setup.py clean
   - python setup.py -q install
 
 # command to run tests
 script:
   - coverage run --source=pycec setup.py test
+  - py.test --cov=pycec tests/
 after_success:
   - coveralls
   - codeclimate-test-reporter
