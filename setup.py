@@ -4,7 +4,7 @@
 import os
 from setuptools import setup, find_packages
 
-PACKAGES = find_packages(exclude=['tests', 'tests.*'])
+PACKAGES = find_packages(exclude=['tests', 'tests.*', 'build'])
 
 REQUIRES = [
     'cec',
