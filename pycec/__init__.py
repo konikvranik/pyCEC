@@ -3,7 +3,7 @@ from typing import List
 
 from functools import reduce
 
-from const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR, CMD_OSD_NAME, VENDORS
+from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR, CMD_OSD_NAME, VENDORS
 from pycec.datastruct import PhysicalAddress, CecCommand
 
 _LOGGER = logging.getLogger(__name__)
@@ -51,6 +51,14 @@ class HdmiDevice:
     def name(self) -> str:
         return self._osd_name
 
+    @property
+    def is_on(self):
+        return self.power_status == 0x00
+
+    @property
+    def is_off(self):
+        return self.power_status == 0x01
+
     def update(self, command: CecCommand):
         if command.cmd == CMD_PHYSICAL_ADDRESS[1]:
             self._physical_address = PhysicalAddress(command.att)
@@ -75,10 +83,10 @@ class HdmiNetwork:
 
 
 class CecClient:
-    def __init__(self):
+    def __init__(self, name: str = None):
         """initialize libCEC"""
         cecconfig = None  # cec.libcec_configuration()
-        cecconfig.strDeviceName = "HA"
+        cecconfig.strDeviceName = name
         cecconfig.bActivateSource = 0
         cecconfig.bMonitorOnly = 0
         # cecconfig.deviceTypes.Add(cec.CEC_DEVICE_TYPE_RECORDING_DEVICE)
