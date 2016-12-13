@@ -1,8 +1,10 @@
 import logging
 from typing import List
 
-from pycec.datastruct import CMD_PHYSICAL_ADDRESS, PhysicalAddress, CMD_POWER_STATUS, CMD_VENDOR, CMD_OSD_NAME, \
-    CecCommand
+from functools import reduce
+
+from const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR, CMD_OSD_NAME, VENDORS
+from pycec.datastruct import PhysicalAddress, CecCommand
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -10,7 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 class HdmiDevice:
     def __init__(self, logical_address: int):
         self._logical_address = logical_address
-        self._physical_address = int()
+        self._physical_address = PhysicalAddress
         self._power_status = int()
         self._audio_status = int()
         self._is_active_source = bool()
@@ -29,20 +31,35 @@ class HdmiDevice:
     def logical_address(self) -> int:
         return self._logical_address
 
-    @logical_address.setter
-    def logical_address(self, value: int):
-        self._logical_address = value
+    @property
+    def physical_address(self) -> PhysicalAddress:
+        return self._physical_address
+
+    @property
+    def power_status(self) -> int:
+        return self._power_status
+
+    @property
+    def vendor_id(self) -> int:
+        return self._vendor_id
+
+    @property
+    def vendor(self) -> str:
+        return VENDORS[self._vendor_id]
+
+    @property
+    def name(self) -> str:
+        return self._osd_name
 
     def update(self, command: CecCommand):
         if command.cmd == CMD_PHYSICAL_ADDRESS[1]:
-            self._physical_address = PhysicalAddress(
-                (command.att[0], command.att[0]))
+            self._physical_address = PhysicalAddress(command.att)
         elif command.cmd == CMD_POWER_STATUS[1]:
-            pass
+            self._power_status = command.att[0]
         elif command.cmd == CMD_VENDOR[1]:
-            pass
+            self._vendor_id = reduce(lambda x, y: x * 0x100 + y, command.att)
         elif command.cmd == CMD_OSD_NAME[1]:
-            pass
+            self._osd_name = "".join(map(lambda x: chr(x), command.att))
 
 
 class HdmiNetwork:
