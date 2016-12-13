@@ -15,7 +15,7 @@ python:
 # command to install dependencies
 install:
   - pip install .
-  - pip install -r test_requirements.txt --use-mirrors
+  #- pip install -r test_requirements.txt --use-mirrors
   - pip install coveralls
   - python setup.py -q install
 # command to run tests
