@@ -15,10 +15,10 @@ class CecCommand:
         if isinstance(cmd, (str,)):
             self.raw = cmd
         else:
-            self.src = src or None
-            self.dst = dst or None
-            self.cmd = cmd or None
-            self.att = att or None
+            self.src = src
+            self.dst = dst
+            self.cmd = cmd
+            self.att = att
 
         if raw is not None:
             self.raw = raw
