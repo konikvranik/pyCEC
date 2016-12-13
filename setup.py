@@ -24,12 +24,9 @@ setup(
     license = "BSD",
     keywords = "cec hdmi come-assistant",
     url = "https://github.com/konikvranik/pycec/",
-    packages=['pycec', 'tests'],
+    packages=['pycec'],
     long_description=read('README.md'),
-    setup_requires=['pytest-runner'],
-    tests_require=['pytest'],
     test_suite='tests',
-    test_loader='pytest',
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: Utilities",
