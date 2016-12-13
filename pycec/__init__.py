@@ -12,7 +12,7 @@ class CecCommand:
         self._src = int()
         self._dst = int()
         self._cmd = int()
-        self._att = list([int])
+        self._att = list()
 
         if isinstance(cmd, (str,)):
             self.raw = cmd
@@ -20,7 +20,7 @@ class CecCommand:
             self.src = src or None
             self.dst = dst or None
             self.cmd = cmd or None
-            self.att = att or List(int)
+            self.att = att or None
 
         if raw is not None:
             self.raw = raw
@@ -68,7 +68,7 @@ class CecCommand:
         self.src = int(atts[0][0], 16)
         self.dst = int(atts[0][1], 16)
         self.cmd = int(atts[1], 16)
-        self.att = [int(x, 16) for x in atts[2:]]
+        self.att = list(int(x, 16) for x in atts[2:])
 
     def __str__(self):
         return self.raw
@@ -97,11 +97,25 @@ class PhysicalAddress:
     def __init__(self, address):
         self._physical_address = int()
         if isinstance(address, (str,)):
-            address = [int(x, 16) for x in address.split(':')]
+            address = list(int(x, 16) for x in address.split(':'))
         if isinstance(address, (tuple, list,)):
             self._physical_address = address[0] * 0x100 + address[1]
         elif isinstance(address, (int,)):
             self._physical_address = address
+
+    @property
+    def aslist(self) -> List[int]:
+        return list(
+            reversed(list(x for x in _to_digits(self._physical_address))))
+
+    @property
+    def asint(self) -> int:
+        return self._physical_address
+
+    @property
+    def ascmd(self) -> str:
+        return "%x%x:%x%x" % tuple(
+            reversed([x for x in _to_digits(self._physical_address)]))
 
     def __str__(self):
         return ".".join(
