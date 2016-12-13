@@ -17,7 +17,7 @@ python:
 before_install:
 #  - sudo apt-get -qq update
 #  - sudo apt-get install qemu-user-static
-  - sudo apt-get -y install libcec-dev python-pip python-dev
+  - sudo apt-get -y install libcec-dev python-pip python-dev libcec-platform-dev libcec3
 
 
 install:
