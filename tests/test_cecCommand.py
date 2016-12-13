@@ -27,21 +27,42 @@ class TestCecCommand(TestCase):
         cc = CecCommand("52:90:02")
         cc.dst = 0x4
         self.failUnless(("%s" % cc) == "54:90:02")
-        cc = CecCommand(0x8f, 0x5, 0x3,raw="78:a5:89:45")
+        cc = CecCommand(0x8f, 0x5, 0x3, raw="78:a5:89:45")
         self.failUnless(cc.dst == 0x8)
 
     def test_cmd(self):
         cc = CecCommand("1f:90:02")
         self.failUnless(cc.cmd == 0x90)
+        cc = CecCommand("52:8f:02")
+        self.failUnless(cc.cmd == 0x8f)
+        cc = CecCommand(0x8f, 0x5, 0x3)
+        self.failUnless(cc.cmd == 0x8f)
+        cc = CecCommand("52:90:02")
+        cc.cmd = 0x40
+        self.failUnless(("%s" % cc) == "52:40:02")
+        cc = CecCommand(0x8f, 0x5, 0x3, raw="78:a5:89:45")
+        self.failUnless(cc.cmd == 0xa5)
 
     def test_att(self):
         cc = CecCommand("1f:90:02")
         self.failUnless(cc.att == [0x02])
+        cc = CecCommand("52:8f:02:56")
+        self.failUnless(cc.att == [0x02, 0x56])
+        cc = CecCommand(0x8f, 0x5, 0x3, [0x45, 0x56, 0x98])
+        self.failUnless(cc.att == [0x45, 0x56, 0x98])
+        cc = CecCommand("52:90:02:03:04:56")
+        cc.att = [0x52, 0x90, 0x02]
+        self.failUnless(("%s" % cc) == "52:90:52:90:02")
+        cc = CecCommand(0x8f, 0x5, 0x3, raw="78:a5:89:45")
+        self.failUnless(cc.att == [0x89, 0x45])
 
     def test_raw(self):
-        cc = CecCommand("1f:90:02")
-        self.failUnless(cc.raw == "1f:90:02")
-
-    def test_str(self):
-        cc = CecCommand("1f:90:02")
-        self.failUnless(("%s" % cc) == "1f:90:02")
+        cc = CecCommand("1f:90:02:05:89")
+        self.failUnless(cc.raw == "1f:90:02:05:89")
+        cc = CecCommand("1f:90:02:05:89")
+        cc.raw = "52:90:52:90:02"
+        self.failUnless(cc.raw == "52:90:52:90:02")
+        self.failUnless(cc.src == 0x5)
+        self.failUnless(cc.dst == 0x2)
+        self.failUnless(cc.cmd == 0x90)
+        self.failUnless(cc.att == [0x52, 0x90, 0x02])
