@@ -29,7 +29,7 @@ class HdmiDevice:
         self._timer_cleared_status = int()
         self._timer_status = int()
         self._network = network
-        self._updates = Dict(int, bool)
+        self._updates = dict()
 
     @property
     def logical_address(self) -> int:
