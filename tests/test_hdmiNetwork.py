@@ -1,3 +1,4 @@
+import asyncio
 from unittest import TestCase
 
 from pycec import HdmiNetwork, HdmiDevice
@@ -11,13 +12,14 @@ class TestHdmiNetwork(TestCase):
     def test_scan(self):
         network = HdmiNetwork(MockAdapter(
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
-             False]))
-        network.scan()
+             False]), scan_interval=0)
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(network.scan())
         self.assertIn(HdmiDevice(0), network.devices)
         device = network.get_device(0)
-        self.assertEqual(device.name, '')
+        self.assertEqual(device.osd_name, '')
         device.request_name()
-        self.assertEqual(device.name, "Test")
+        self.assertEqual(device.osd_name, "Test")
         self.assertEqual(device.power_status, 0)
         device.request_power_status()
         self.assertEqual(device.power_status, 2)
@@ -25,8 +27,9 @@ class TestHdmiNetwork(TestCase):
     def test_devices(self):
         network = HdmiNetwork(MockAdapter(
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
-             False]))
-        network.scan()
+             False]), scan_interval=0)
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(network.scan())
         for i in [0, 1, 3, 5]:
             self.assertIn(HdmiDevice(i), network.devices)
         for i in [2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14]:

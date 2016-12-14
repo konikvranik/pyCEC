@@ -7,21 +7,21 @@ class CecCommand:
     def __init__(self, cmd=None, dst: int = None, src: int = None,
                  att: List[int] = None, raw: str = None):
 
-        self._src = int()
-        self._dst = int()
-        self._cmd = int()
-        self._att = list()
+        self._src = src
+        self._dst = dst
+        self._cmd = cmd
+        self._att = att
+        self._raw = raw
 
-        if isinstance(cmd, (str,)):
+        if raw is not None:
+            self.raw = raw
+        elif isinstance(cmd, (str,)):
             self.raw = cmd
         else:
             self.src = src
             self.dst = dst
             self.cmd = cmd
             self.att = att
-
-        if raw is not None:
-            self.raw = raw
 
     @property
     def src(self) -> int:
