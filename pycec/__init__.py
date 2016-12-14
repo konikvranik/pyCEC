@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Dict
 
 from functools import reduce
 
@@ -29,6 +29,7 @@ class HdmiDevice:
         self._timer_cleared_status = int()
         self._timer_status = int()
         self._network = network
+        self._updates = Dict(int, bool)
 
     @property
     def logical_address(self) -> int:
@@ -73,24 +74,36 @@ class HdmiDevice:
     def update(self, command: CecCommand):
         if command.cmd == CMD_PHYSICAL_ADDRESS[1]:
             self._physical_address = PhysicalAddress(command.att)
+            self._updates[CMD_PHYSICAL_ADDRESS[0]] = True
         elif command.cmd == CMD_POWER_STATUS[1]:
             self._power_status = command.att[0]
+            self._updates[CMD_POWER_STATUS[0]] = True
         elif command.cmd == CMD_VENDOR[1]:
             self._vendor_id = reduce(lambda x, y: x * 0x100 + y, command.att)
+            self._updates[CMD_VENDOR[0]] = True
         elif command.cmd == CMD_OSD_NAME[1]:
             self._osd_name = "".join(map(lambda x: chr(x), command.att))
+            self._updates[CMD_OSD_NAME[0]] = True
+
+    def request_update(self, cmd: int):
+        self._updates[cmd] = False
+        self.network.request_update(self.logical_address, cmd)
 
     def request_power_status(self):
-        self.network.request_update(self.logical_address, CMD_POWER_STATUS[0])
+        self.request_update(CMD_POWER_STATUS[0])
 
     def request_name(self):
-        self.network.request_update(self.logical_address, CMD_OSD_NAME[0])
+        self.request_update(CMD_OSD_NAME[0])
 
     def request_physical_address(self):
-        self.network.request_update(self.logical_address, CMD_PHYSICAL_ADDRESS[0])
+        self.request_update(CMD_PHYSICAL_ADDRESS[0])
 
     def request_vendor(self):
-        self.network.request_update(self.logical_address, CMD_VENDOR[0])
+        self.request_update(CMD_VENDOR[0])
+
+    @property
+    def is_updated(self, cmd):
+        return self._updates[cmd]
 
     def __eq__(self, other):
         return isinstance(other, (HdmiDevice,)) and self.logical_address == other.logical_address
@@ -126,6 +139,9 @@ class HdmiNetwork:
 
     def get_device(self, i) -> HdmiDevice:
         return self._devices[i]
+
+    def watch(self):
+        pass
 
     def command_callback(self, raw_command: str):
         command = CecCommand(raw_command)
