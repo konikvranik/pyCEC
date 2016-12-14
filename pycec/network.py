@@ -80,25 +80,20 @@ class HdmiDevice:
         self._network = network
 
     def update(self, command: CecCommand):
-        _LOGGER.debug("Updating device %d", self.logical_address)
         if command.cmd == CMD_PHYSICAL_ADDRESS[1]:
-            _LOGGER.debug("Updating address of %d", self.logical_address)
-            self._physical_address = PhysicalAddress(command.att[0:3])
+            self._physical_address = PhysicalAddress(command.att[0:2])
             self._type = command.att[2]
             self._updates[CMD_PHYSICAL_ADDRESS[0]] = True
             return True
         elif command.cmd == CMD_POWER_STATUS[1]:
-            _LOGGER.debug("Updating power of %d", self.logical_address)
             self._power_status = command.att[0]
             self._updates[CMD_POWER_STATUS[0]] = True
             return True
         elif command.cmd == CMD_VENDOR[1]:
-            _LOGGER.debug("Updating vendor of %d", self.logical_address)
             self._vendor_id = reduce(lambda x, y: x * 0x100 + y, command.att)
             self._updates[CMD_VENDOR[0]] = True
             return True
         elif command.cmd == CMD_OSD_NAME[1]:
-            _LOGGER.debug("Updating name of %d", self.logical_address)
             self._osd_name = reduce(lambda x, y: x + chr(y), command.att, "")
             self._updates[CMD_OSD_NAME[0]] = True
             return True
@@ -120,7 +115,6 @@ class HdmiDevice:
     def request_update(self, cmd: int):
         self._updates[cmd] = False
         command = CecCommand(cmd, self.logical_address)
-        _LOGGER.debug("Requesting %s" % str(command))
         self.network.send_command(command)
 
     def request_power_status(self):
@@ -158,7 +152,8 @@ def _init_cec(cecconfig=None):
     for adapter in adapters:
         _LOGGER.info("found a CEC adapter:")
         _LOGGER.info("port:     " + adapter.strComName)
-        _LOGGER.info("vendor:   " + hex(adapter.iVendorId))
+        _LOGGER.info(
+            "vendor:   " + (VENDORS[adapter.iVendorId] if adapter.iVendorId in VENDORS else hex(adapter.iVendorId)))
         _LOGGER.info("product:  " + hex(adapter.iProductId))
         adapter = adapter.strComName
     if adapter is None:
@@ -192,12 +187,13 @@ class HdmiNetwork:
         _LOGGER.debug("Callback set")
 
     def scan(self):
+        _LOGGER.info("Looking for devices...")
         for d in range(15):
             self._device_status[d] = self._adapter.PollDevice(d)
             time.sleep(self._scan_delay)
-            _LOGGER.info("Device %d: %s", d, self._device_status[d])
         new_devices = {k: HdmiDevice(k, self) for (k, v) in
                        filter(lambda x: x[0] not in self._devices, filter(lambda x: x[1], self._device_status.items()))}
+        _LOGGER.info("Found new devices: %s", new_devices)
         self._devices.update(new_devices)
         for d in new_devices.values():
             _LOGGER.info("Adding device %d", d.logical_address)
@@ -210,7 +206,6 @@ class HdmiNetwork:
     def send_command(self, command: CecCommand):
         if command.src is None:
             command.src = self.local_address
-        _LOGGER.debug("Sending command %s", command)
         self._adapter.Transmit(self._adapter.CommandFromString(command.raw))
 
     @property
@@ -219,7 +214,7 @@ class HdmiNetwork:
 
     @property
     def devices(self) -> Iterable:
-        return self._devices.values()
+        return tuple(self._devices.values())
 
     def get_device(self, i) -> HdmiDevice:
         return self._devices[i]
@@ -236,15 +231,12 @@ class HdmiNetwork:
 
     def _async_callback(self, raw_command):
         command = CecCommand(raw_command[3:])
-        _LOGGER.debug("Got command %s", str(command))
         updated = False
         if command.src == 15:
-            _LOGGER.debug("SRC is 15")
             for i in range(15):
                 updated |= self.get_device(i).update(command)
         elif command.src in self._devices:
-            _LOGGER.debug("SRC is %x", command.src)
             updated = self.get_device(command.src).update(command)
         if not updated:
+            _LOGGER.info("Queuing command %s", str(command))
             self._command_queue.put(command)
-        _LOGGER.debug("Callback done %s", updated)
