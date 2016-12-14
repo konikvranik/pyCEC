@@ -37,6 +37,7 @@ class HdmiDevice:
         self._updates = dict()
         self._stop = False
         self._update_period = update_period
+        self._type = int()
 
     @property
     def logical_address(self) -> int:
@@ -79,20 +80,26 @@ class HdmiDevice:
         self._network = network
 
     def update(self, command: CecCommand):
+        _LOGGER.debug("Updating device %d", self.logical_address)
         if command.cmd == CMD_PHYSICAL_ADDRESS[1]:
-            self._physical_address = PhysicalAddress(command.att)
+            _LOGGER.debug("Updating address of %d", self.logical_address)
+            self._physical_address = PhysicalAddress(command.att[0:3])
+            self._type = command.att[2]
             self._updates[CMD_PHYSICAL_ADDRESS[0]] = True
             return True
         elif command.cmd == CMD_POWER_STATUS[1]:
+            _LOGGER.debug("Updating power of %d", self.logical_address)
             self._power_status = command.att[0]
             self._updates[CMD_POWER_STATUS[0]] = True
             return True
         elif command.cmd == CMD_VENDOR[1]:
+            _LOGGER.debug("Updating vendor of %d", self.logical_address)
             self._vendor_id = reduce(lambda x, y: x * 0x100 + y, command.att)
             self._updates[CMD_VENDOR[0]] = True
             return True
         elif command.cmd == CMD_OSD_NAME[1]:
-            self._osd_name = "".join(map(lambda x: chr(x), command.att))
+            _LOGGER.debug("Updating name of %d", self.logical_address)
+            self._osd_name = reduce(lambda x, y: x + chr(y), command.att, "")
             self._updates[CMD_OSD_NAME[0]] = True
             return True
         return False
@@ -139,8 +146,8 @@ class HdmiDevice:
         return self._logical_address
 
     def __str__(self):
-        return "HDMI %d: %s (%s), power %s" % (
-            self.logical_address, self.name, str(self.physical_address), self.power_status)
+        return "HDMI %d: %s, %s (%s), power %s" % (
+            self.logical_address, self.vendor, self.osd_name, str(self.physical_address), self.power_status)
 
 
 def _init_cec(cecconfig=None):
@@ -167,8 +174,9 @@ def _init_cec(cecconfig=None):
 
 
 class HdmiNetwork:
-    def __init__(self, config, adapter=None, scan_interval=DEFAULT_SCAN_INTERVAL):
+    def __init__(self, config, adapter=None, scan_interval=DEFAULT_SCAN_INTERVAL, loop=asyncio.get_event_loop()):
         _LOGGER.info("Network init...")
+        self._loop = loop
         self._scan_delay = DEFAULT_SCAN_DELAY
         self._scan_interval = scan_interval
         self._command_queue = Queue()
@@ -183,7 +191,7 @@ class HdmiNetwork:
             self._adapter = _init_cec(config)
         _LOGGER.debug("Callback set")
 
-    def scan(self, loop):
+    def scan(self):
         for d in range(15):
             self._device_status[d] = self._adapter.PollDevice(d)
             time.sleep(self._scan_delay)
@@ -193,7 +201,7 @@ class HdmiNetwork:
         self._devices.update(new_devices)
         for d in new_devices.values():
             _LOGGER.info("Adding device %d", d.logical_address)
-            loop.create_task(d.run())
+            self._loop.create_task(d.run())
             # asyncio.async(d.run())
             for i in filter(lambda x: not x[1], self._device_status.items()):
                 if i in self._devices:
@@ -202,8 +210,8 @@ class HdmiNetwork:
     def send_command(self, command: CecCommand):
         if command.src is None:
             command.src = self.local_address
-        self._adapter.Transmit(
-            self._adapter.CommandFromString(command.raw))
+        _LOGGER.debug("Sending command %s", command)
+        self._adapter.Transmit(self._adapter.CommandFromString(command.raw))
 
     @property
     def local_address(self):
@@ -219,19 +227,24 @@ class HdmiNetwork:
     @asyncio.coroutine
     def watch(self):
         _LOGGER.debug("Start watching...")
-        loop = asyncio.get_event_loop()
         while True:
-            yield from loop.run_in_executor(None, self.scan, loop)
+            yield from self._loop.run_in_executor(None, self.scan)
             yield from asyncio.sleep(self._scan_interval)
 
     def command_callback(self, raw_command):
-        command = CecCommand(raw_command)
+        self._loop.call_soon(self._async_callback, raw_command)
+
+    def _async_callback(self, raw_command):
+        command = CecCommand(raw_command[3:])
         _LOGGER.debug("Got command %s", str(command))
         updated = False
         if command.src == 15:
+            _LOGGER.debug("SRC is 15")
             for i in range(15):
                 updated |= self.get_device(i).update(command)
-        else:
+        elif command.src in self._devices:
+            _LOGGER.debug("SRC is %x", command.src)
             updated = self.get_device(command.src).update(command)
         if not updated:
             self._command_queue.put(command)
+        _LOGGER.debug("Callback done %s", updated)

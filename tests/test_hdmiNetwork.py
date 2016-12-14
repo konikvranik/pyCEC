@@ -22,7 +22,7 @@ class TestHdmiNetwork(TestCase):
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0)
         network._scan_delay = 0
-        network.scan(asyncio.get_event_loop())
+        network.scan()
         clear_event_loop()
         self.assertIn(HdmiDevice(0), network.devices)
         device = network.get_device(0)
@@ -40,7 +40,7 @@ class TestHdmiNetwork(TestCase):
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0)
         network._scan_delay = 0
-        network.scan(asyncio.get_event_loop())
+        network.scan()
         clear_event_loop()
         for i in [0, 1, 3, 5]:
             self.assertIn(HdmiDevice(i), network.devices)
