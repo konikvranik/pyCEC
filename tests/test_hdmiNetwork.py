@@ -6,6 +6,14 @@ from pycec.const import CMD_POWER_STATUS, CMD_OSD_NAME, CMD_VENDOR, CMD_PHYSICAL
 from pycec.datastruct import CecCommand
 
 
+def clear_event_loop():
+    loop = asyncio.get_event_loop()
+    if not loop.is_running():
+        loop = asyncio.new_event_loop()
+    loop.stop()
+    loop.run_forever()
+
+
 class TestHdmiNetwork(TestCase):
     pass
 
@@ -13,8 +21,8 @@ class TestHdmiNetwork(TestCase):
         network = HdmiNetwork(MockAdapter(
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0)
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(network.scan())
+        network.scan()
+        clear_event_loop()
         self.assertIn(HdmiDevice(0), network.devices)
         device = network.get_device(0)
         self.assertEqual(device.osd_name, '')
@@ -23,17 +31,26 @@ class TestHdmiNetwork(TestCase):
         self.assertEqual(device.power_status, 0)
         device.request_power_status()
         self.assertEqual(device.power_status, 2)
+        for d in network.devices:
+            d.stop()
 
     def test_devices(self):
         network = HdmiNetwork(MockAdapter(
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0)
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(network.scan())
+        network.scan()
+        clear_event_loop()
         for i in [0, 1, 3, 5]:
             self.assertIn(HdmiDevice(i), network.devices)
         for i in [2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14]:
             self.assertNotIn(HdmiDevice(i), network.devices)
+        for d in network.devices:
+            d.stop()
+
+    def tearDown(self):
+        loop = asyncio.get_event_loop()
+        loop.stop()
+        loop.run_forever()
 
 
 class MockConfig:
