@@ -1,9 +1,9 @@
 import asyncio
 from unittest import TestCase
 
-from pycec import HdmiNetwork, HdmiDevice
 from pycec.const import CMD_POWER_STATUS, CMD_OSD_NAME, CMD_VENDOR, CMD_PHYSICAL_ADDRESS
 from pycec.datastruct import CecCommand
+from pycec.network import HdmiNetwork, HdmiDevice
 
 
 def clear_event_loop():
@@ -18,11 +18,11 @@ class TestHdmiNetwork(TestCase):
     pass
 
     def test_scan(self):
-        network = HdmiNetwork(MockAdapter(
+        network = HdmiNetwork(MockConfig(), MockAdapter(
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0)
         network._scan_delay = 0
-        network.scan()
+        network.scan(asyncio.get_event_loop())
         clear_event_loop()
         self.assertIn(HdmiDevice(0), network.devices)
         device = network.get_device(0)
@@ -36,11 +36,11 @@ class TestHdmiNetwork(TestCase):
             d.stop()
 
     def test_devices(self):
-        network = HdmiNetwork(MockAdapter(
+        network = HdmiNetwork(MockConfig(), MockAdapter(
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0)
         network._scan_delay = 0
-        network.scan()
+        network.scan(asyncio.get_event_loop())
         clear_event_loop()
         for i in [0, 1, 3, 5]:
             self.assertIn(HdmiDevice(i), network.devices)
@@ -106,3 +106,6 @@ class MockAdapter:
 
     def GetCurrentConfiguration(self):
         return self._config
+
+    def SetConfiguration(self, config):
+        self._config = config
