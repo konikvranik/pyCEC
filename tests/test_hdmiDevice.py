@@ -16,7 +16,7 @@ class TestHdmiDevice(TestCase):
         device = HdmiDevice(2)
         cmd = CecCommand('02:%02x:4f:6e:6b:79:6f:20:48:54:58:2d:32:32:48:44:58' % CMD_OSD_NAME[1])
         device.update(cmd)
-        self.assertEqual(device.name, 'Onkyo HTX-22HDX')
+        self.assertEqual(device.osd_name, 'Onkyo HTX-22HDX')
 
         cmd = CecCommand('02:%02x:01' % CMD_POWER_STATUS[1])
         device.update(cmd)
