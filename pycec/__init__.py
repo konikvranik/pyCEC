@@ -1,8 +1,8 @@
 import asyncio
 import logging
-from multiprocessing import Queue
-
+import time
 from functools import reduce
+from multiprocessing import Queue
 
 from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR, CMD_OSD_NAME, VENDORS
 from pycec.datastruct import PhysicalAddress, CecCommand
@@ -99,8 +99,14 @@ class HdmiDevice:
     @asyncio.coroutine
     def run(self):
         while not self._stop:
-            self.update()
+            asyncio.get_event_loop().run_in_executor(None, self.request_power_status)
+            asyncio.get_event_loop().run_in_executor(None, self.request_name)
+            asyncio.get_event_loop().run_in_executor(None, self.request_vendor)
+            asyncio.get_event_loop().run_in_executor(None, self.request_physical_address)
             yield from asyncio.sleep(self._update_period)
+
+    def stop(self):
+        self._stop = True
 
     def request_update(self, cmd: int):
         self._updates[cmd] = False
@@ -138,16 +144,18 @@ class HdmiNetwork:
         self._devices = dict()
         adapter.GetCurrentConfiguration().SetCommandCallback(self.command_callback)
 
-    @asyncio.coroutine
     def scan(self):
         for d in range(15):
             self._device_status[d] = self._adapter.PollDevice(d)
-            yield from asyncio.sleep(self._scan_interval)
+            time.sleep(self._scan_interval)
         new_devices = {k: HdmiDevice(k, self) for (k, v) in
                        filter(lambda x: x[0] not in self._devices, filter(lambda x: x[1], self._device_status.items()))}
         self._devices.update(new_devices)
         for d in new_devices.values():
             asyncio.async(d.run())
+            for i in filter(lambda x: not x[1], self._device_status.items()):
+                if i in self._devices:
+                    self.get_device(i).stop()
 
     def send_command(self, command: CecCommand):
         if command.src is None:
