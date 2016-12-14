@@ -8,7 +8,6 @@ pyCEC
 [![Test Coverage](https://codeclimate.com/github/konikvranik/pycec/badges/coverage.svg)](https://codeclimate.com/github/konikvranik/pycec/coverage)
 [![Issue Count](https://codeclimate.com/github/konikvranik/pycec/badges/issue_count.svg)](https://codeclimate.com/github/konikvranik/pycec)
 
-[![Coverage Status](https://coveralls.io/repos/github/konikvranik/pycec/badge.svg?branch=dev)](https://coveralls.io/github/konikvranik/pycec?branch=dev)
 
 
 Purpose of this project is to provide object API to libcec for home-assistant hdmi_cec module.
