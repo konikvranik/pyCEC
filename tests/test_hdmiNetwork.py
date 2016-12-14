@@ -21,6 +21,7 @@ class TestHdmiNetwork(TestCase):
         network = HdmiNetwork(MockAdapter(
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0)
+        network._scan_delay = 0
         network.scan()
         clear_event_loop()
         self.assertIn(HdmiDevice(0), network.devices)
@@ -38,6 +39,7 @@ class TestHdmiNetwork(TestCase):
         network = HdmiNetwork(MockAdapter(
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0)
+        network._scan_delay = 0
         network.scan()
         clear_event_loop()
         for i in [0, 1, 3, 5]:
