@@ -12,11 +12,13 @@ _LOGGER = logging.getLogger(__name__)
 
 LIB_CEC = {}
 
-DEFAULT_SCAN_INTERVAL = 1
+DEFAULT_SCAN_INTERVAL = 30
+DFAULT_UPDATE_PERIOD = 30
+DEFAULT_SCAN_DELAY = 1
 
 
 class HdmiDevice:
-    def __init__(self, logical_address: int, network=None, update_period=60):
+    def __init__(self, logical_address: int, network=None, update_period=DFAULT_UPDATE_PERIOD):
         self._logical_address = logical_address
         self.name = "hdmi_%x" % logical_address
         self._physical_address = PhysicalAddress
@@ -138,6 +140,7 @@ class HdmiDevice:
 
 class HdmiNetwork:
     def __init__(self, adapter, scan_interval=DEFAULT_SCAN_INTERVAL):
+        self._scan_delay = DEFAULT_SCAN_DELAY
         self._scan_interval = scan_interval
         self._command_queue = Queue()
         self._adapter = adapter
@@ -148,7 +151,7 @@ class HdmiNetwork:
     def scan(self):
         for d in range(15):
             self._device_status[d] = self._adapter.PollDevice(d)
-            time.sleep(self._scan_interval)
+            time.sleep(self._scan_delay)
         new_devices = {k: HdmiDevice(k, self) for (k, v) in
                        filter(lambda x: x[0] not in self._devices, filter(lambda x: x[1], self._device_status.items()))}
         self._devices.update(new_devices)
@@ -175,11 +178,12 @@ class HdmiNetwork:
     def get_device(self, i) -> HdmiDevice:
         return self._devices[i]
 
+    @asyncio.coroutine
     def watch(self):
         loop = asyncio.get_event_loop()
-        loop.run_in_executor(None, self.scan)
-        loop.run_forever()
-        loop.close()
+        while True:
+            loop.run_in_executor(None, self.scan)
+            yield from asyncio.sleep(self._scan_interval)
 
     def command_callback(self, raw_command: str):
         command = CecCommand(raw_command)
