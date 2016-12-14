@@ -147,7 +147,7 @@ class HdmiNetwork:
                        filter(lambda x: x[0] not in self._devices, filter(lambda x: x[1], self._device_status.items()))}
         self._devices.update(new_devices)
         for d in new_devices.values():
-            asyncio.ensure_future(d.run())
+            asyncio.async(d.run())
 
     def send_command(self, command: CecCommand):
         if command.src is None:
@@ -167,7 +167,7 @@ class HdmiNetwork:
         return self._devices[i]
 
     def watch(self):
-        asyncio.ensure_future(self.scan())
+        asyncio.async(self.scan())
         loop = asyncio.get_event_loop()
         loop.run_forever()
         loop.close()
