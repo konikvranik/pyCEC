@@ -3,6 +3,7 @@ import logging
 import time
 from functools import reduce
 from multiprocessing import Queue
+from typing import Iterable
 
 from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR, CMD_OSD_NAME, VENDORS
 from pycec.datastruct import PhysicalAddress, CecCommand
@@ -168,15 +169,15 @@ class HdmiNetwork:
         return self._adapter.GetLogicalAddresses().primary
 
     @property
-    def devices(self) -> list:
+    def devices(self) -> Iterable:
         return self._devices.values()
 
     def get_device(self, i) -> HdmiDevice:
         return self._devices[i]
 
     def watch(self):
-        asyncio.async(self.scan())
         loop = asyncio.get_event_loop()
+        loop.run_in_executor(None, self.scan)
         loop.run_forever()
         loop.close()
 
