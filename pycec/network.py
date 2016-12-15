@@ -102,7 +102,7 @@ class HdmiDevice:
 
     @asyncio.coroutine
     def run(self):
-        _LOGGER.debug("Running device %d", self.logical_address)
+        _LOGGER.debug("Starting device %d", self.logical_address)
         while not self._stop:
             yield from self._network._loop.run_in_executor(None, self.request_update, CMD_POWER_STATUS[0])
             yield from self._network._loop.run_in_executor(None, self.request_update, CMD_OSD_NAME[0])
@@ -176,13 +176,17 @@ class HdmiNetwork:
         _LOGGER.debug("Callback set")
 
     def scan(self):
-        _LOGGER.info("Looking for devices...")
+        _LOGGER.info("Looking for new devices...")
         for d in range(15):
             self._device_status[d] = self._adapter.PollDevice(d)
             time.sleep(self._scan_delay)
         new_devices = {k: HdmiDevice(k, self) for (k, v) in
                        filter(lambda x: x[0] not in self._devices, filter(lambda x: x[1], self._device_status.items()))}
-        _LOGGER.info("Found new devices: %s", new_devices)
+
+        if new_devices:
+            _LOGGER.info("Found new devices: %s", new_devices)
+        else:
+            _LOGGER.info("No new devices")
         self._devices.update(new_devices)
         for d in new_devices.values():
             _LOGGER.info("Adding device %d", d.logical_address)
