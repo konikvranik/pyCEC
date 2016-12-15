@@ -104,6 +104,7 @@ class HdmiDevice:
         self._network = network
 
     def update(self, command: CecCommand):
+        _LOGGER.debug("Updating device  ")
         if command.cmd == CMD_PHYSICAL_ADDRESS[1]:
             self._physical_address = PhysicalAddress(command.att[0:2])
             self._type = command.att[2]
@@ -161,6 +162,8 @@ class HdmiDevice:
 
     @asyncio.coroutine
     def async_send_command(self, command):
+        _LOGGER.debug("Sending command %s", command)
+        #self._network._loop.call_soon_threadsafe(self.network.send_command, command)
         yield from self._network._loop.run_in_executor(None, self.network.send_command, command)
 
 
@@ -202,7 +205,7 @@ class HdmiNetwork:
         self._device_status = dict()
         self._devices = dict()
         _LOGGER.debug("Importing cec")
-        config.SetCommandCallback(self.command_callback)
+        #config.SetCommandCallback(self.command_callback)
         self._adapter = adapter
         if adapter is not None:
             adapter.SetConfiguration(config)
@@ -213,7 +216,9 @@ class HdmiNetwork:
     def scan(self):
         _LOGGER.info("Looking for new devices...")
         for d in range(15):
+            _LOGGER.debug("look for d %d", d)
             self._device_status[d] = self._adapter.PollDevice(d)
+            _LOGGER.debug("delaying")
             time.sleep(self._scan_delay)
         new_devices = {k: HdmiDevice(k, self) for (k, v) in
                        filter(lambda x: x[0] not in self._devices, filter(lambda x: x[1], self._device_status.items()))}
@@ -252,17 +257,22 @@ class HdmiNetwork:
         if loop is None:
             loop = self._loop
         while True:
+            #loop.call_soon_threadsafe(self.scan)
             yield from loop.run_in_executor(None, self.scan)
             yield from asyncio.sleep(self._scan_interval, loop=loop)
 
     def start(self):
         self._loop.create_task(self.async_watch())
-        asyncio.get_event_loop().run_in_executor(None, self._loop.run_forever)
+        #asyncio.get_event_loop().call_soon_threadsafe(self._loop.run_forever)
+        if not self._loop.is_running():
+            self._loop.run_in_executor(None, self._loop.run_forever)
 
     def command_callback(self, raw_command):
-        self._loop.call_soon(self._async_callback, raw_command)
+        _LOGGER.debug("Queuing callback")
+  #      self._loop.call_soon_threadsafe(self._async_callback, raw_command)
 
-    def _async_callback(self, raw_command):
+ #   def _async_callback(self, raw_command):
+        _LOGGER.debug("In callback")
         command = CecCommand(raw_command[3:])
         updated = False
         if command.src == 15:
