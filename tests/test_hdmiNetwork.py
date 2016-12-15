@@ -6,37 +6,28 @@ from pycec.datastruct import CecCommand
 from pycec.network import HdmiNetwork, HdmiDevice
 
 
-@asyncio.coroutine
-def run_scan(network, loop):
-    yield from loop.run_in_executor(None, network.scan)
-    yield from loop.wait()
-
-
 class TestHdmiNetwork(TestCase):
-    pass
+    def setUp(self):
+        self._loop = asyncio.new_event_loop()
 
     def test_scan(self):
+
         network = HdmiNetwork(MockConfig(), MockAdapter(
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
-             False]), scan_interval=0)
+             False]), scan_interval=0, loop=self._loop)
         network._scan_delay = 0
-        loop = asyncio.new_event_loop()
-        loop.run_until_complete(loop.run_in_executor(None, network.scan))
+        # loop.start_task(run_scan(network,loop))
+        network.scan()
+        self._loop.run_until_complete(asyncio.sleep(1, loop=self._loop))
         self.assertIn(HdmiDevice(0), network.devices)
         device = network.get_device(0)
-        self.assertEqual(device.osd_name, '')
-        device.request_name()
-        self.assertEqual(device.osd_name, "Test")
-        self.assertEqual(device.power_status, 0)
-        device.request_power_status()
-        self.assertEqual(device.power_status, 2)
-        for d in network.devices:
-            d.stop()
+        self.assertEqual("Test", device.osd_name)
+        self.assertEqual(2, device.power_status)
 
     def test_devices(self):
         network = HdmiNetwork(MockConfig(), MockAdapter(
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
-             False]), scan_interval=0)
+             False]), scan_interval=0, loop=self._loop)
         network._scan_delay = 0
         network.scan()
         #        clear_event_loop()
@@ -46,11 +37,11 @@ class TestHdmiNetwork(TestCase):
             self.assertNotIn(HdmiDevice(i), network.devices)
         for d in network.devices:
             d.stop()
+        self._loop.stop()
 
     def tearDown(self):
-        loop = asyncio.get_event_loop()
-        loop.stop()
-        loop.run_forever()
+        self._loop.stop()
+        self._loop.run_forever()
 
 
 class MockConfig:
@@ -82,19 +73,19 @@ class MockAdapter:
         if command.cmd == CMD_POWER_STATUS[0]:
             response.cmd = CMD_POWER_STATUS[1]
             response.att = [2]
-            self._config.GetCommandCallback()(response.raw)
+            self._config.GetCommandCallback()(">> " + response.raw)
         elif command.cmd == CMD_OSD_NAME[0]:
             response.cmd = CMD_OSD_NAME[1]
             response.att = (ord(i) for i in "Test")
-            self._config.GetCommandCallback()(response.raw)
+            self._config.GetCommandCallback()(">> " + response.raw)
         elif command.cmd == CMD_VENDOR[0]:
             response.cmd = CMD_VENDOR[1]
             response.att = [0x00, 0x09, 0xB0]
-            self._config.GetCommandCallback()(response.raw)
+            self._config.GetCommandCallback()(">> " + response.raw)
         elif command.cmd == CMD_PHYSICAL_ADDRESS[0]:
             response.cmd = CMD_PHYSICAL_ADDRESS[1]
             response.att = [0x09, 0xB0]
-            self._config.GetCommandCallback()(response.raw)
+            self._config.GetCommandCallback()(">> " + response.raw)
 
     def CommandFromString(self, cmd: str) -> CecCommand:
         return CecCommand(cmd)
