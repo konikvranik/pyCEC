@@ -76,7 +76,15 @@ class HdmiDevice:
 
     @asyncio.coroutine
     def async_turn_on(self):
-        command = CecCommand()
+        command = CecCommand(0x44, self.logical_address, att=[0x40])
+        yield from self.async_send_command(command)
+
+    def turn_off(self):
+        self._network._loop.create_task(self.async_turn_off())
+
+    @asyncio.coroutine
+    def async_turn_off(self):
+        command = CecCommand(0x44, self.logical_address, att=[0x6c])
         yield from self.async_send_command(command)
 
     @property
