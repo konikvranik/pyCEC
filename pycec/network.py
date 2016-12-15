@@ -198,7 +198,6 @@ class HdmiNetwork:
         for d in new_devices.values():
             _LOGGER.info("Adding device %d", d.logical_address)
             self._loop.create_task(d.run())
-            # asyncio.async(d.run())
             for i in filter(lambda x: not x[1], self._device_status.items()):
                 if i in self._devices:
                     self.get_device(i).stop()
