@@ -103,10 +103,10 @@ class HdmiDevice:
     def run(self):
         _LOGGER.debug("Running device %d", self.logical_address)
         while not self._stop:
-            yield from asyncio.get_event_loop().run_in_executor(None, self.request_power_status)
-            yield from asyncio.get_event_loop().run_in_executor(None, self.request_name)
-            yield from asyncio.get_event_loop().run_in_executor(None, self.request_vendor)
-            yield from asyncio.get_event_loop().run_in_executor(None, self.request_physical_address)
+            yield from self._network._loop.run_in_executor(None, self.request_update, CMD_POWER_STATUS[0])
+            yield from self._network._loop.run_in_executor(None, self.request_update, CMD_OSD_NAME[0])
+            yield from self._network._loop.run_in_executor(None, self.request_update, CMD_VENDOR[0])
+            yield from self._network._loop.run_in_executor(None, self.request_update, CMD_PHYSICAL_ADDRESS[0])
             yield from asyncio.sleep(self._update_period)
 
     def stop(self):
@@ -116,18 +116,6 @@ class HdmiDevice:
         self._updates[cmd] = False
         command = CecCommand(cmd, self.logical_address)
         self.network.send_command(command)
-
-    def request_power_status(self):
-        self.request_update(CMD_POWER_STATUS[0])
-
-    def request_name(self):
-        self.request_update(CMD_OSD_NAME[0])
-
-    def request_physical_address(self):
-        self.request_update(CMD_PHYSICAL_ADDRESS[0])
-
-    def request_vendor(self):
-        self.request_update(CMD_VENDOR[0])
 
     @property
     def is_updated(self, cmd):
@@ -169,7 +157,7 @@ def _init_cec(cecconfig=None):
 
 
 class HdmiNetwork:
-    def __init__(self, config, adapter=None, scan_interval=DEFAULT_SCAN_INTERVAL, loop=asyncio.get_event_loop()):
+    def __init__(self, config, adapter=None, scan_interval=DEFAULT_SCAN_INTERVAL, loop=asyncio.new_event_loop()):
         _LOGGER.info("Network init...")
         self._loop = loop
         self._scan_delay = DEFAULT_SCAN_DELAY
@@ -198,9 +186,9 @@ class HdmiNetwork:
         for d in new_devices.values():
             _LOGGER.info("Adding device %d", d.logical_address)
             self._loop.create_task(d.run())
-            for i in filter(lambda x: not x[1], self._device_status.items()):
-                if i in self._devices:
-                    self.get_device(i).stop()
+        for i in filter(lambda x: not x[1], self._device_status.items()):
+            if i in self._devices:
+                self.get_device(i).stop()
 
     def send_command(self, command: CecCommand):
         if command.src is None:
