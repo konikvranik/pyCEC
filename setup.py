@@ -21,7 +21,7 @@ def read(fname):
 
 setup(
     name="pyCEC",
-    version="0.0.1",
+    version="0.0.3",
     author="Petr Vraník",
     author_email="hpa@suteren.net",
     description=(
@@ -34,7 +34,7 @@ setup(
     long_description=read('README.md'),
     test_suite='tests',
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Topic :: Utilities",
         "License :: OSI Approved :: MIT License",
         'Programming Language :: Python :: 3.4',
