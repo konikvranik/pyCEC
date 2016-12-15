@@ -9,6 +9,7 @@ from pycec.network import HdmiNetwork, HdmiDevice
 @asyncio.coroutine
 def run_scan(network, loop):
     yield from loop.run_in_executor(None, network.scan)
+    yield from loop.wait()
 
 
 class TestHdmiNetwork(TestCase):
@@ -20,7 +21,7 @@ class TestHdmiNetwork(TestCase):
              False]), scan_interval=0)
         network._scan_delay = 0
         loop = asyncio.new_event_loop()
-        loop.run_until_complete(run_scan(network, loop))
+        loop.run_until_complete(loop.run_in_executor(None, network.scan))
         self.assertIn(HdmiDevice(0), network.devices)
         device = network.get_device(0)
         self.assertEqual(device.osd_name, '')
