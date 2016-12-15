@@ -103,10 +103,10 @@ class HdmiDevice:
     def run(self):
         _LOGGER.debug("Running device %d", self.logical_address)
         while not self._stop:
-            asyncio.get_event_loop().run_in_executor(None, self.request_power_status)
-            asyncio.get_event_loop().run_in_executor(None, self.request_name)
-            asyncio.get_event_loop().run_in_executor(None, self.request_vendor)
-            asyncio.get_event_loop().run_in_executor(None, self.request_physical_address)
+            yield from asyncio.get_event_loop().run_in_executor(None, self.request_power_status)
+            yield from asyncio.get_event_loop().run_in_executor(None, self.request_name)
+            yield from asyncio.get_event_loop().run_in_executor(None, self.request_vendor)
+            yield from asyncio.get_event_loop().run_in_executor(None, self.request_physical_address)
             yield from asyncio.sleep(self._update_period)
 
     def stop(self):
