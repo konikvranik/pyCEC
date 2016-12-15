@@ -23,7 +23,10 @@ if __name__ == '__main__':
     cecconfig.clientVersion = cec.LIBCEC_VERSION_CURRENT
 
     _LOGGER.info("Starting network...")
+    loop = asyncio.get_event_loop()
     network = HdmiNetwork(cecconfig)
+
+    network.start()
 
 
     @asyncio.coroutine
@@ -34,9 +37,6 @@ if __name__ == '__main__':
                 yield from asyncio.sleep(5)
 
 
-    _LOGGER.info("Start watch...")
-    loop = asyncio.get_event_loop()
-    asyncio.async(network.watch())
-    asyncio.async(async_print())
+    loop.create_task(async_print())
 
     loop.run_forever()

@@ -108,7 +108,7 @@ class HdmiDevice:
             yield from self._network._loop.run_in_executor(None, self.request_update, CMD_OSD_NAME[0])
             yield from self._network._loop.run_in_executor(None, self.request_update, CMD_VENDOR[0])
             yield from self._network._loop.run_in_executor(None, self.request_update, CMD_PHYSICAL_ADDRESS[0])
-            yield from asyncio.sleep(self._update_period, self._network._loop)
+            yield from asyncio.sleep(self._update_period, loop=self._network._loop)
 
     def stop(self):
         self._stop = True
@@ -208,11 +208,17 @@ class HdmiNetwork:
         return self._devices[i]
 
     @asyncio.coroutine
-    def watch(self):
+    def watch(self, loop=None):
         _LOGGER.debug("Start watching...")
+        if loop is None:
+            loop = self._loop
         while True:
-            yield from self._loop.run_in_executor(None, self.scan)
-            yield from asyncio.sleep(self._scan_interval, self._loop)
+            yield from loop.run_in_executor(None, self.scan)
+            yield from asyncio.sleep(self._scan_interval, loop=loop)
+
+    def start(self):
+        self._loop.create_task(self.watch())
+        asyncio.get_event_loop().run_in_executor(None, self._loop.run_forever)
 
     def command_callback(self, raw_command):
         self._loop.call_soon(self._async_callback, raw_command)
