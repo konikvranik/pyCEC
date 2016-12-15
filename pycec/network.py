@@ -1,8 +1,9 @@
 import asyncio
 import time
-from functools import reduce
 from multiprocessing import Queue
 from typing import Iterable
+
+from functools import reduce
 
 from pycec import _LOGGER
 from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR, CMD_OSD_NAME, VENDORS
@@ -107,7 +108,7 @@ class HdmiDevice:
             yield from self._network._loop.run_in_executor(None, self.request_update, CMD_OSD_NAME[0])
             yield from self._network._loop.run_in_executor(None, self.request_update, CMD_VENDOR[0])
             yield from self._network._loop.run_in_executor(None, self.request_update, CMD_PHYSICAL_ADDRESS[0])
-            yield from asyncio.sleep(self._update_period)
+            yield from asyncio.sleep(self._update_period, self._network._loop)
 
     def stop(self):
         self._stop = True
@@ -211,7 +212,7 @@ class HdmiNetwork:
         _LOGGER.debug("Start watching...")
         while True:
             yield from self._loop.run_in_executor(None, self.scan)
-            yield from asyncio.sleep(self._scan_interval)
+            yield from asyncio.sleep(self._scan_interval, self._loop)
 
     def command_callback(self, raw_command):
         self._loop.call_soon(self._async_callback, raw_command)
