@@ -30,7 +30,7 @@ class TestHdmiDevice(TestCase):
         self.assertEqual(device.vendor_id, 0x18C086)
         self.assertEqual(device.vendor, 'Broadcom')
 
-        cmd = CecCommand('02:%02x:C0:86' % CMD_PHYSICAL_ADDRESS[1])
+        cmd = CecCommand('02:%02x:C0:86:01' % CMD_PHYSICAL_ADDRESS[1])
         device.update(cmd)
         self.assertEqual(device.physical_address.ascmd, 'c0:86')
         self.assertEqual(device.physical_address.aslist, [0xC, 0x0, 0x8, 0x6])
