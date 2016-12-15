@@ -11,17 +11,28 @@ class TestHdmiNetwork(TestCase):
         self._loop = asyncio.new_event_loop()
 
     def test_scan(self):
-
         network = HdmiNetwork(MockConfig(), MockAdapter(
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0, loop=self._loop)
         network._scan_delay = 0
-        # loop.start_task(run_scan(network,loop))
         network.scan()
-        self._loop.run_until_complete(asyncio.sleep(1, loop=self._loop))
+        self._loop.run_until_complete(asyncio.sleep(.1, loop=self._loop))
+
         self.assertIn(HdmiDevice(0), network.devices)
         device = network.get_device(0)
-        self.assertEqual("Test", device.osd_name)
+        self.assertEqual("Test0", device.osd_name)
+        self.assertEqual(2, device.power_status)
+
+        self.assertIn(HdmiDevice(1), network.devices)
+        device = network.get_device(1)
+        self.assertEqual("Test1", device.osd_name)
+        self.assertEqual(2, device.power_status)
+
+        self.assertNotIn(HdmiDevice(2), network.devices)
+
+        self.assertIn(HdmiDevice(3), network.devices)
+        device = network.get_device(3)
+        self.assertEqual("Test3", device.osd_name)
         self.assertEqual(2, device.power_status)
 
     def test_devices(self):
@@ -76,7 +87,7 @@ class MockAdapter:
             self._config.GetCommandCallback()(">> " + response.raw)
         elif command.cmd == CMD_OSD_NAME[0]:
             response.cmd = CMD_OSD_NAME[1]
-            response.att = (ord(i) for i in "Test")
+            response.att = (ord(i) for i in ("Test%d" % command.dst))
             self._config.GetCommandCallback()(">> " + response.raw)
         elif command.cmd == CMD_VENDOR[0]:
             response.cmd = CMD_VENDOR[1]
