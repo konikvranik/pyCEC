@@ -1,19 +1,14 @@
 import asyncio
 from unittest import TestCase
 
-import time
-
 from pycec.const import CMD_POWER_STATUS, CMD_OSD_NAME, CMD_VENDOR, CMD_PHYSICAL_ADDRESS
 from pycec.datastruct import CecCommand
 from pycec.network import HdmiNetwork, HdmiDevice
 
 
-def clear_event_loop():
-    loop = asyncio.get_event_loop()
-    if not loop.is_running():
-        loop = asyncio.new_event_loop()
-    loop.stop()
-    loop.run_forever()
+@asyncio.coroutine
+def run_scan(network, loop):
+    yield from loop.run_in_executor(None, network.scan)
 
 
 class TestHdmiNetwork(TestCase):
@@ -24,14 +19,8 @@ class TestHdmiNetwork(TestCase):
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0)
         network._scan_delay = 0
-        #network.scan()
-        #clear_event_loop()
-        loop=asyncio.new_event_loop()
-        loop.run_in_executor(None, network.scan)
-        time.sleep(1)
-        loop.stop()
-        loop.run_forever()
-        #loop.run_until_complete(network.scan())
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(run_scan(network, loop))
         self.assertIn(HdmiDevice(0), network.devices)
         device = network.get_device(0)
         self.assertEqual(device.osd_name, '')
@@ -49,7 +38,7 @@ class TestHdmiNetwork(TestCase):
              False]), scan_interval=0)
         network._scan_delay = 0
         network.scan()
-        clear_event_loop()
+        #        clear_event_loop()
         for i in [0, 1, 3, 5]:
             self.assertIn(HdmiDevice(i), network.devices)
         for i in [2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14]:
