@@ -20,24 +20,24 @@ class HdmiDevice:
         self._logical_address = logical_address
         self.name = "hdmi_%x" % logical_address
         self._physical_address = None
-        self._power_status = int()
-        self._audio_status = int()
+        self._power_status = None
+        self._audio_status = None
         self._is_active_source = False
-        self._vendor_id = int()
-        self._menu_language = str()
-        self._osd_name = str()
-        self._audio_mode_status = int()
-        self._deck_status = int()
-        self._tuner_status = int()
-        self._menu_status = int()
-        self._record_status = int()
-        self._timer_cleared_status = int()
-        self._timer_status = int()
+        self._vendor_id = None
+        self._menu_language = None
+        self._osd_name = None
+        self._audio_mode_status = None
+        self._deck_status = None
+        self._tuner_status = None
+        self._menu_status = None
+        self._record_status = None
+        self._timer_cleared_status = None
+        self._timer_status = None
         self._network = network
-        self._updates = dict()
+        self._updates = None
         self._stop = False
         self._update_period = update_period
-        self._type = int()
+        self._type = None
         self._update_callback = None
 
     @property
@@ -99,7 +99,6 @@ class HdmiDevice:
     def update_callback(self, command: CecCommand):
         _LOGGER.debug("Updating device  ")
         result = False
-
         if command.cmd == CMD_PHYSICAL_ADDRESS[1]:
             self._physical_address = PhysicalAddress(command.att[0:2])
             self._type = command.att[2]
@@ -180,8 +179,9 @@ class HdmiNetwork:
         self._device_status = dict()
         self._devices = dict()
         self._io_executor = ThreadPoolExecutor(1)
-        self._command_callback = lambda x: x
-        self._new_device_callback = lambda x: x
+        self._command_callback = None
+        self._new_device_callback = None
+        self._initialized_callback = None
 
     def _init_cec(self):
         import cec
@@ -205,6 +205,8 @@ class HdmiNetwork:
                 self._adapter = adapter
             else:
                 _LOGGER.error("failed to open a connection to the CEC adapter")
+        if self._initialized_callback:
+            self._initialized_callback(self)
 
     @property
     def initialized(self):
@@ -218,12 +220,23 @@ class HdmiNetwork:
         config.SetCommandCallback(self.command_callback)
         _LOGGER.debug("Callback set")
         task = self._loop.run_in_executor(self._io_executor, self._init_cec)
+        while task.done() or task.cancelled():
+            _LOGGER.debug("Init cdone")
+            return
+        else:
+            _LOGGER.debug("Init pending")
+            asyncio.sleep(1, loop=self._loop)
 
-    def scan(self):
+    @asyncio.coroutine
+    def async_scan(self):
         _LOGGER.info("Looking for new devices...")
+        if not self.initialized:
+            _LOGGER.error("Device not initialized!!!")
+            return
         for d in range(15):
             _LOGGER.debug("look for d %d", d)
             self._loop.run_in_executor(self._io_executor, self._io_poll_device, d)
+            yield
 
     def _io_poll_device(self, d):
         self._device_status[d] = self._adapter.PollDevice(d)
@@ -244,12 +257,14 @@ class HdmiNetwork:
 
     @asyncio.coroutine
     def async_send_command(self, command):
+        if isinstance(command, str):
+            command = CecCommand(command)
         _LOGGER.debug("Queuing command %s", command)
         self._loop.call_soon_threadsafe(self.io_send_command, command)
 
     def io_send_command(self, command: CecCommand):
         _LOGGER.debug("Sending command %s", command)
-        if command.src is None:
+        if command.src is None or command.src == 0xf:
             command.src = self._adapter.GetLogicalAddresses().primary
         self._loop.run_in_executor(self._io_executor, self._adapter.Transmit,
                                    self._adapter.CommandFromString(command.raw))
@@ -268,7 +283,7 @@ class HdmiNetwork:
             loop = self._loop
         while True:
             if self.initialized:
-                yield from loop.run_in_executor(None, self.scan)
+                yield from self.async_scan()
                 yield from asyncio.sleep(self._scan_interval, loop=loop)
             else:
                 yield from asyncio.sleep(1, loop=loop)
@@ -306,3 +321,6 @@ class HdmiNetwork:
 
     def set_new_device_callback(self, callback):
         self._new_device_callback = callback
+
+    def set_initialized_callback(self, callback):
+        self._initialized_callback = callback
