@@ -36,6 +36,8 @@ setup(
     classifiers=[
         "Development Status :: 4 - Beta",
         "Topic :: Utilities",
+        "Topic :: Home Automation",
+        "Topic :: Multimedia",
         "License :: OSI Approved :: MIT License",
         'Programming Language :: Python :: 3.4',
     ],
