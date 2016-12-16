@@ -137,13 +137,14 @@ class HdmiDevice:
 
     @asyncio.coroutine
     def async_request_update(self, cmd: int):
+        _LOGGER.debug("Requesting device update...")
         self._updates[cmd] = False
         command = CecCommand(cmd, self.logical_address)
         yield from self.async_send_command(command)
 
     @asyncio.coroutine
     def async_send_command(self, command):
-        _LOGGER.debug("Sending command %s", command)
+        _LOGGER.debug("Device sending command %s", command)
         yield from self._network.async_send_command(command)
 
     @property
@@ -230,10 +231,10 @@ class HdmiNetwork:
             self._devices[d] = HdmiDevice(d, self)
             if self._new_device_callback:
                 self._loop.call_soon_threadsafe(self._new_device_callback, self._devices[d])
-            self._devices[d].async_request_update(CMD_POWER_STATUS[0])
-            self._devices[d].async_request_update(CMD_OSD_NAME[0])
-            self._devices[d].async_request_update(CMD_VENDOR[0])
-            self._devices[d].async_request_update(CMD_PHYSICAL_ADDRESS[0])
+            self._loop.create_task(self._devices[d].async_request_update(CMD_POWER_STATUS[0]))
+            self._loop.create_task(self._devices[d].async_request_update(CMD_OSD_NAME[0]))
+            self._loop.create_task(self._devices[d].async_request_update(CMD_VENDOR[0]))
+            self._loop.create_task(self._devices[d].async_request_update(CMD_PHYSICAL_ADDRESS[0]))
             _LOGGER.debug("Found device %d", d)
         elif self._device_status[d] and d in self._devices:
             self.get_device(d).stop()
@@ -243,9 +244,11 @@ class HdmiNetwork:
 
     @asyncio.coroutine
     def async_send_command(self, command):
-        self._loop.call_soon_threadsafe(self.async_send_command, command)
+        _LOGGER.debug("Queuing command %s", command)
+        self._loop.call_soon_threadsafe(self.io_send_command, command)
 
     def io_send_command(self, command: CecCommand):
+        _LOGGER.debug("Sending command %s", command)
         if command.src is None:
             command.src = self._adapter.GetLogicalAddresses().primary
         self._loop.run_in_executor(self._io_executor, self._adapter.Transmit,
