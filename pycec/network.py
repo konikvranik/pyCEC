@@ -1,5 +1,4 @@
 import asyncio
-import time
 from concurrent.futures.thread import ThreadPoolExecutor
 from multiprocessing import Queue
 
@@ -166,14 +165,14 @@ class HdmiDevice:
 
 
 class HdmiNetwork:
-    def __init__(self, config=None, scan_interval=DEFAULT_SCAN_INTERVAL, loop=None):
+    def __init__(self, config=None, scan_interval=DEFAULT_SCAN_INTERVAL, loop=None, adapter=None):
         if loop is None:
             self._loop = asyncio.new_event_loop()
         else:
             _LOGGER.warn("Be aware! Network is using shared event loop!")
             self._loop = loop
         self._config = config
-        self._adapter = None
+        self._adapter = adapter
         self._scan_delay = DEFAULT_SCAN_DELAY
         self._scan_interval = scan_interval
         self._command_queue = Queue()
@@ -206,17 +205,18 @@ class HdmiNetwork:
             else:
                 _LOGGER.error("failed to open a connection to the CEC adapter")
 
-    def init(self):
+    @property
+    def initialized(self):
+        return self._adapter is not None
+
+    @asyncio.coroutine
+    def async_init(self):
         _LOGGER.debug("initializing")
         config = self._config
         _LOGGER.debug("setting callback")
         config.SetCommandCallback(self.command_callback)
         _LOGGER.debug("Callback set")
         task = self._loop.run_in_executor(self._io_executor, self._init_cec)
-        while not task.done():
-            time.sleep(1)
-            _LOGGER.debug("Waiting for adaper...")
-        _LOGGER.debug("Adapter initialized.")
 
     def scan(self):
         _LOGGER.info("Looking for new devices...")
@@ -264,10 +264,14 @@ class HdmiNetwork:
         if loop is None:
             loop = self._loop
         while True:
-            yield from loop.run_in_executor(None, self.scan)
-            yield from asyncio.sleep(self._scan_interval, loop=loop)
+            if self.initialized:
+                yield from loop.run_in_executor(None, self.scan)
+                yield from asyncio.sleep(self._scan_interval, loop=loop)
+            else:
+                yield from asyncio.sleep(1, loop=loop)
 
     def start(self):
+        self._loop.create_task(self.async_init())
         self._loop.create_task(self.async_watch())
         if not self._loop.is_running():
             self._loop.run_in_executor(None, self._loop.run_forever)

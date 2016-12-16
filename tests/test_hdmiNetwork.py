@@ -11,12 +11,12 @@ class TestHdmiNetwork(TestCase):
         self._loop = asyncio.new_event_loop()
 
     def test_scan(self):
-        network = HdmiNetwork(MockConfig(), MockAdapter(
+        network = HdmiNetwork(MockConfig(), adapter=MockAdapter(
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0, loop=self._loop)
         network._scan_delay = 0
         network.scan()
-        self._loop.run_until_complete(asyncio.sleep(.1, loop=self._loop))
+        self._loop.run_until_complete(asyncio.sleep(1, loop=self._loop))
 
         self.assertIn(HdmiDevice(0), network.devices)
         device = network.get_device(0)
@@ -36,7 +36,7 @@ class TestHdmiNetwork(TestCase):
         self.assertEqual(2, device.power_status)
 
     def test_devices(self):
-        network = HdmiNetwork(MockConfig(), MockAdapter(
+        network = HdmiNetwork(MockConfig(), adapter=MockAdapter(
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0, loop=self._loop)
         network._scan_delay = 0
