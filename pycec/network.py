@@ -220,12 +220,13 @@ class HdmiNetwork:
         config.SetCommandCallback(self.command_callback)
         _LOGGER.debug("Callback set")
         task = self._loop.run_in_executor(self._io_executor, self._init_cec)
-        while task.done() or task.cancelled():
-            _LOGGER.debug("Init cdone")
-            return
-        else:
+        while not (task.done() or task.cancelled()):
             _LOGGER.debug("Init pending")
-            asyncio.sleep(1, loop=self._loop)
+            yield from asyncio.sleep(1, loop=self._loop)
+        _LOGGER.debug("Init done")
+
+    def scan(self):
+        self._loop.create_task(self.async_scan())
 
     @asyncio.coroutine
     def async_scan(self):
@@ -234,7 +235,6 @@ class HdmiNetwork:
             _LOGGER.error("Device not initialized!!!")
             return
         for d in range(15):
-            _LOGGER.debug("look for d %d", d)
             self._loop.run_in_executor(self._io_executor, self._io_poll_device, d)
             yield
 
@@ -244,16 +244,20 @@ class HdmiNetwork:
             self._devices[d] = HdmiDevice(d, self)
             if self._new_device_callback:
                 self._loop.call_soon_threadsafe(self._new_device_callback, self._devices[d])
-            self._loop.create_task(self._devices[d].async_request_update(CMD_POWER_STATUS[0]))
-            self._loop.create_task(self._devices[d].async_request_update(CMD_OSD_NAME[0]))
-            self._loop.create_task(self._devices[d].async_request_update(CMD_VENDOR[0]))
-            self._loop.create_task(self._devices[d].async_request_update(CMD_PHYSICAL_ADDRESS[0]))
+            self._loop.create_task(self._devices[d].async_run())
+            #self._loop.create_task(self._devices[d].async_request_update(CMD_POWER_STATUS[0]))
+            #self._loop.create_task(self._devices[d].async_request_update(CMD_OSD_NAME[0]))
+            #self._loop.create_task(self._devices[d].async_request_update(CMD_VENDOR[0]))
+            #self._loop.create_task(self._devices[d].async_request_update(CMD_PHYSICAL_ADDRESS[0]))
             _LOGGER.debug("Found device %d", d)
-        elif self._device_status[d] and d in self._devices:
+        elif not self._device_status[d] and d in self._devices:
             self.get_device(d).stop()
             if self._devices[d]._update_callback:
                 self._loop.call_soon_threadsafe(self._devices[d]._update_callback, self._devices[d])
             del (self._devices[d])
+
+    def send_command(self, command):
+        self._loop.create_task(self.async_send_command(command))
 
     @asyncio.coroutine
     def async_send_command(self, command):
@@ -283,9 +287,12 @@ class HdmiNetwork:
             loop = self._loop
         while True:
             if self.initialized:
+                _LOGGER.debug("Sacnning...")
                 yield from self.async_scan()
+                _LOGGER.debug("Sleep...")
                 yield from asyncio.sleep(self._scan_interval, loop=loop)
             else:
+                _LOGGER.warning("Not initialized. Waiting for init.")
                 yield from asyncio.sleep(1, loop=loop)
 
     def start(self):
