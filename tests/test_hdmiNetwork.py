@@ -8,17 +8,16 @@ from pycec.network import HDMINetwork, HDMIDevice
 
 class TestHdmiNetwork(TestCase):
     def setUp(self):
-        self._loop = asyncio.new_event_loop()
+        self._loop = asyncio.get_event_loop()
 
     def test_scan(self):
         network = HDMINetwork(MockConfig(), adapter=MockAdapter(
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0, loop=self._loop)
         network._scan_delay = 0
-        #network.scan()
-        self._loop.create_task(network.async_init())
-        self._loop.create_task(network.async_scan())
-        self._loop.run_until_complete(asyncio.sleep(1,loop=self._loop))
+        network._config.SetCommandCallback(network.command_callback)
+        network.scan()
+        self._loop.run_until_complete(asyncio.sleep(.1, self._loop))
 
         self.assertIn(HDMIDevice(0), network.devices)
         device = network.get_device(0)
@@ -42,8 +41,9 @@ class TestHdmiNetwork(TestCase):
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0, loop=self._loop)
         network._scan_delay = 0
+        network._config.SetCommandCallback(network.command_callback)
         network.scan()
-        #        clear_event_loop()
+        self._loop.run_until_complete(asyncio.sleep(.1, self._loop))
         for i in [0, 1, 3, 5]:
             self.assertIn(HDMIDevice(i), network.devices)
         for i in [2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14]:

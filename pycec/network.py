@@ -185,7 +185,7 @@ class HDMINetwork:
         self._initialized_callback = None
         self._device_removed_callback = None
 
-    def _init_cec(self):
+    def _init_cec(self):  # pragma: no cover
         import cec
         if isinstance(self._config, (CecConfig,)):
             self._config = self._config.cecconfig
