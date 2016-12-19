@@ -7,9 +7,11 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class CecConfig:
-    def __init__(self, name: str = None, monitor_only: bool = False, activate_source: bool = False,
+    def __init__(self, name: str = None, monitor_only: bool = False,
+                 activate_source: bool = False,
                  device_type=TYPE_RECORDER_1):
         import cec
+        self._command_callback = None
         self._cecconfig = cec.libcec_configuration()
         self._cecconfig.bMonitorOnly = 1 if monitor_only else 0
         self._cecconfig.strDeviceName = name
@@ -19,3 +21,6 @@ class CecConfig:
     @property
     def cecconfig(self):
         return self._cecconfig
+
+    def SetCommandCallback(self, callback):
+        self._cecconfig.SetCommandCallback(callback)

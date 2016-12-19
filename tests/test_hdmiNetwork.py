@@ -15,7 +15,7 @@ class TestHdmiNetwork(TestCase):
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0, loop=self._loop)
         network._scan_delay = 0
-        network._config.SetCommandCallback(network.command_callback)
+        network._adapter._config.SetCommandCallback(network.command_callback)
         network.scan()
         self._loop.run_until_complete(asyncio.sleep(.1, self._loop))
 
