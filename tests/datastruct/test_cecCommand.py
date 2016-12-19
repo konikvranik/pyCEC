@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pycec.datastruct import CecCommand
+from pycec.commands import CecCommand
 
 
 class TestCecCommand(TestCase):
@@ -37,9 +37,6 @@ class TestCecCommand(TestCase):
         self.assertEqual(cc.cmd, 0x8f)
         cc = CecCommand(0x8f, 0x5, 0x3)
         self.assertEqual(cc.cmd, 0x8f)
-        cc = CecCommand("52:90:02")
-        cc.cmd = 0x40
-        self.assertEqual(("%s" % cc), "52:40:02")
         cc = CecCommand(0x8f, 0x5, 0x3, raw="78:a5:89:45")
         self.assertEqual(cc.cmd, 0xa5)
 
@@ -50,19 +47,9 @@ class TestCecCommand(TestCase):
         self.assertEqual(cc.att, [0x02, 0x56])
         cc = CecCommand(0x8f, 0x5, 0x3, [0x45, 0x56, 0x98])
         self.assertEqual(cc.att, [0x45, 0x56, 0x98])
-        cc = CecCommand("52:90:02:03:04:56")
-        cc.att = [0x52, 0x90, 0x02]
-        self.assertEqual(("%s" % cc), "52:90:52:90:02")
         cc = CecCommand(0x8f, 0x5, 0x3, raw="78:a5:89:45")
         self.assertEqual(cc.att, [0x89, 0x45])
 
     def test_raw(self):
         cc = CecCommand("1f:90:02:05:89")
         self.assertEqual(cc.raw, "1f:90:02:05:89")
-        cc = CecCommand("1f:90:02:05:89")
-        cc.raw = "52:90:52:90:02"
-        self.assertEqual(cc.raw, "52:90:52:90:02")
-        self.assertEqual(cc.src, 0x5)
-        self.assertEqual(cc.dst, 0x2)
-        self.assertEqual(cc.cmd, 0x90)
-        self.assertEqual(cc.att, [0x52, 0x90, 0x02])

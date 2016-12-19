@@ -4,9 +4,10 @@ from multiprocessing import Queue
 
 from functools import reduce
 
+from pycec.commands import CecCommand
 from pycec import _LOGGER
 from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR, CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES
-from pycec.datastruct import PhysicalAddress, CecCommand
+from pycec.datastruct import PhysicalAddress
 
 LIB_CEC = {}
 
@@ -16,7 +17,9 @@ DEFAULT_SCAN_DELAY = 1
 
 
 class HdmiDevice:
-    def __init__(self, logical_address: int, network=None, update_period=DFAULT_UPDATE_PERIOD):
+    def __init__(self, logical_address: int, network=None, update_period=DFAULT_UPDATE_PERIOD,
+                 loop=asyncio.get_event_loop()):
+        self._loop = loop
         self._logical_address = logical_address
         self.name = "hdmi_%x" % logical_address
         self._physical_address = None
@@ -73,7 +76,7 @@ class HdmiDevice:
         return self.power_status == 0x01
 
     def turn_on(self):
-        self._network._loop.create_task(self.async_turn_on())
+        self._loop.create_task(self.async_turn_on())
 
     @asyncio.coroutine
     def async_turn_on(self):
@@ -81,7 +84,7 @@ class HdmiDevice:
         yield from self.async_send_command(command)
 
     def turn_off(self):
-        self._network._loop.create_task(self.async_turn_off())
+        self._loop.create_task(self.async_turn_off())
 
     @asyncio.coroutine
     def async_turn_off(self):
@@ -118,7 +121,7 @@ class HdmiDevice:
             result = True
         if result:
             if self._update_callback:
-                self._network._loop.call_soon_threadsafe(self._update_callback, self)
+                self._loop.call_soon_threadsafe(self._update_callback, self)
         return result
 
     @asyncio.coroutine
@@ -129,7 +132,7 @@ class HdmiDevice:
             yield from self.async_request_update(CMD_OSD_NAME[0])
             yield from self.async_request_update(CMD_VENDOR[0])
             yield from self.async_request_update(CMD_PHYSICAL_ADDRESS[0])
-            yield from asyncio.sleep(self._update_period, loop=self._network._loop)
+            yield from asyncio.sleep(self._update_period, loop=self._loop)
 
     def stop(self):
         self._stop = True
@@ -165,7 +168,7 @@ class HdmiDevice:
 
 
 class HdmiNetwork:
-    def __init__(self, config=None, scan_interval=DEFAULT_SCAN_INTERVAL, loop=None, adapter=None):
+    def __init__(self, config, scan_interval=DEFAULT_SCAN_INTERVAL, loop=None, adapter=None):
         if loop is None:
             self._loop = asyncio.new_event_loop()
         else:
@@ -180,11 +183,14 @@ class HdmiNetwork:
         self._devices = dict()
         self._io_executor = ThreadPoolExecutor(1)
         self._command_callback = None
-        self._new_device_callback = None
+        self._device_added_callback = None
         self._initialized_callback = None
+        self._device_removed_callback = None
 
     def _init_cec(self):
         import cec
+        self._config.bActivateSource = 0
+        self._config.clientVersion = cec.LIBCEC_VERSION_CURRENT
         _LOGGER.debug("Initing CEC...")
         adapter = cec.ICECAdapter.Create(self._config)
         _LOGGER.debug("Created adapter")
@@ -241,19 +247,15 @@ class HdmiNetwork:
     def _io_poll_device(self, d):
         self._device_status[d] = self._adapter.PollDevice(d)
         if self._device_status[d] and d not in self._devices:
-            self._devices[d] = HdmiDevice(d, self)
-            if self._new_device_callback:
-                self._loop.call_soon_threadsafe(self._new_device_callback, self._devices[d])
+            self._devices[d] = HdmiDevice(d, self, loop=self._loop)
+            if self._device_added_callback:
+                self._loop.call_soon_threadsafe(self._device_added_callback, self._devices[d])
             self._loop.create_task(self._devices[d].async_run())
-            #self._loop.create_task(self._devices[d].async_request_update(CMD_POWER_STATUS[0]))
-            #self._loop.create_task(self._devices[d].async_request_update(CMD_OSD_NAME[0]))
-            #self._loop.create_task(self._devices[d].async_request_update(CMD_VENDOR[0]))
-            #self._loop.create_task(self._devices[d].async_request_update(CMD_PHYSICAL_ADDRESS[0]))
             _LOGGER.debug("Found device %d", d)
         elif not self._device_status[d] and d in self._devices:
             self.get_device(d).stop()
-            if self._devices[d]._update_callback:
-                self._loop.call_soon_threadsafe(self._devices[d]._update_callback, self._devices[d])
+            if self._device_removed_callback:
+                self._loop.call_soon_threadsafe(self._device_removed_callback, self._devices[d])
             del (self._devices[d])
 
     def send_command(self, command):
@@ -327,7 +329,10 @@ class HdmiNetwork:
         self._command_callback = callback
 
     def set_new_device_callback(self, callback):
-        self._new_device_callback = callback
+        self._device_added_callback = callback
+
+    def set_device_removed_callback(self, callback):
+        self._device_removed_callback = callback
 
     def set_initialized_callback(self, callback):
         self._initialized_callback = callback
