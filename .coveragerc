@@ -3,6 +3,7 @@ source = pycec
 
 omit =
     pycec/__main__.py
+    pycec/__init__.py
 
 
 [report]
