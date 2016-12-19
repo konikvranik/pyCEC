@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from pycec.commands import CecCommand
 from pycec.const import CMD_POWER_STATUS, CMD_OSD_NAME, CMD_VENDOR, CMD_PHYSICAL_ADDRESS
-from pycec.network import HdmiNetwork, HdmiDevice
+from pycec.network import HDMINetwork, HDMIDevice
 
 
 class TestHdmiNetwork(TestCase):
@@ -11,7 +11,7 @@ class TestHdmiNetwork(TestCase):
         self._loop = asyncio.new_event_loop()
 
     def test_scan(self):
-        network = HdmiNetwork(MockConfig(), adapter=MockAdapter(
+        network = HDMINetwork(MockConfig(), adapter=MockAdapter(
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0, loop=self._loop)
         network._scan_delay = 0
@@ -20,34 +20,34 @@ class TestHdmiNetwork(TestCase):
         self._loop.create_task(network.async_scan())
         self._loop.run_until_complete(asyncio.sleep(1,loop=self._loop))
 
-        self.assertIn(HdmiDevice(0), network.devices)
+        self.assertIn(HDMIDevice(0), network.devices)
         device = network.get_device(0)
         self.assertEqual("Test0", device.osd_name)
         self.assertEqual(2, device.power_status)
 
-        self.assertIn(HdmiDevice(1), network.devices)
+        self.assertIn(HDMIDevice(1), network.devices)
         device = network.get_device(1)
         self.assertEqual("Test1", device.osd_name)
         self.assertEqual(2, device.power_status)
 
-        self.assertNotIn(HdmiDevice(2), network.devices)
+        self.assertNotIn(HDMIDevice(2), network.devices)
 
-        self.assertIn(HdmiDevice(3), network.devices)
+        self.assertIn(HDMIDevice(3), network.devices)
         device = network.get_device(3)
         self.assertEqual("Test3", device.osd_name)
         self.assertEqual(2, device.power_status)
 
     def test_devices(self):
-        network = HdmiNetwork(MockConfig(), adapter=MockAdapter(
+        network = HDMINetwork(MockConfig(), adapter=MockAdapter(
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0, loop=self._loop)
         network._scan_delay = 0
         network.scan()
         #        clear_event_loop()
         for i in [0, 1, 3, 5]:
-            self.assertIn(HdmiDevice(i), network.devices)
+            self.assertIn(HDMIDevice(i), network.devices)
         for i in [2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14]:
-            self.assertNotIn(HdmiDevice(i), network.devices)
+            self.assertNotIn(HDMIDevice(i), network.devices)
         for d in network.devices:
             d.stop()
         self._loop.stop()

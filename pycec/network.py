@@ -4,20 +4,18 @@ from multiprocessing import Queue
 
 from functools import reduce
 
+from pycec import _LOGGER, CecConfig
 from pycec.commands import CecCommand
-from pycec import _LOGGER
 from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR, CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES
 from pycec.datastruct import PhysicalAddress
 
-LIB_CEC = {}
-
 DEFAULT_SCAN_INTERVAL = 30
-DFAULT_UPDATE_PERIOD = 30
+DEFAULT_UPDATE_PERIOD = 30
 DEFAULT_SCAN_DELAY = 1
 
 
-class HdmiDevice:
-    def __init__(self, logical_address: int, network=None, update_period=DFAULT_UPDATE_PERIOD,
+class HDMIDevice:
+    def __init__(self, logical_address: int, network=None, update_period=DEFAULT_UPDATE_PERIOD,
                  loop=asyncio.get_event_loop()):
         self._loop = loop
         self._logical_address = logical_address
@@ -154,7 +152,7 @@ class HdmiDevice:
         return self._updates[cmd]
 
     def __eq__(self, other):
-        return isinstance(other, (HdmiDevice,)) and self.logical_address == other.logical_address
+        return isinstance(other, (HDMIDevice,)) and self.logical_address == other.logical_address
 
     def __hash__(self):
         return self._logical_address
@@ -167,7 +165,7 @@ class HdmiDevice:
         self._update_callback = callback
 
 
-class HdmiNetwork:
+class HDMINetwork:
     def __init__(self, config, scan_interval=DEFAULT_SCAN_INTERVAL, loop=None, adapter=None):
         if loop is None:
             self._loop = asyncio.new_event_loop()
@@ -189,8 +187,10 @@ class HdmiNetwork:
 
     def _init_cec(self):
         import cec
-        self._config.bActivateSource = 0
-        self._config.clientVersion = cec.LIBCEC_VERSION_CURRENT
+        if isinstance(self._config, (CecConfig,)):
+            self._config = self._config.cecconfig
+        if not self._config.clientVersion:
+            self._config.clientVersion = cec.LIBCEC_VERSION_CURRENT
         _LOGGER.debug("Initing CEC...")
         adapter = cec.ICECAdapter.Create(self._config)
         _LOGGER.debug("Created adapter")
@@ -247,7 +247,7 @@ class HdmiNetwork:
     def _io_poll_device(self, d):
         self._device_status[d] = self._adapter.PollDevice(d)
         if self._device_status[d] and d not in self._devices:
-            self._devices[d] = HdmiDevice(d, self, loop=self._loop)
+            self._devices[d] = HDMIDevice(d, self, loop=self._loop)
             if self._device_added_callback:
                 self._loop.call_soon_threadsafe(self._device_added_callback, self._devices[d])
             self._loop.create_task(self._devices[d].async_run())
@@ -279,7 +279,7 @@ class HdmiNetwork:
     def devices(self) -> tuple:
         return tuple(self._devices.values())
 
-    def get_device(self, i) -> HdmiDevice:
+    def get_device(self, i) -> HDMIDevice:
         return self._devices[i]
 
     @asyncio.coroutine

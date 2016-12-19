@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 from . import _LOGGER
-from .network import HdmiNetwork
+from .network import HDMINetwork
 
 if __name__ == '__main__':
 
@@ -23,7 +23,7 @@ if __name__ == '__main__':
     cecconfig.clientVersion = cec.LIBCEC_VERSION_CURRENT
 
     _LOGGER.info("Starting network...")
-    network = HdmiNetwork(cecconfig)
+    network = HDMINetwork(cecconfig)
 
     network.start()
 
