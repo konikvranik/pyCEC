@@ -15,7 +15,7 @@ class TestHDMINetwork(TestCase):
         network._scan_delay = 0
         network._adapter._config.SetCommandCallback(network.command_callback)
         network.scan()
-        loop.run_until_complete(asyncio.sleep(1, loop))
+        loop.run_until_complete(asyncio.sleep(.1, loop))
         loop.stop()
         loop.run_forever()
         for i in [0, 1, 3, 5]:
@@ -35,7 +35,7 @@ class TestHDMINetwork(TestCase):
         network._scan_delay = 0
         network._adapter._config.SetCommandCallback(network.command_callback)
         network.scan()
-        loop.run_until_complete(asyncio.sleep(1, loop))
+        loop.run_until_complete(asyncio.sleep(.1, loop))
         loop.stop()
         loop.run_forever()
 
