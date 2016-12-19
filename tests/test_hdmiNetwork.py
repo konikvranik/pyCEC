@@ -25,6 +25,7 @@ class TestHDMINetwork(TestCase):
         for d in network.devices:
             d.stop()
         network.stop()
+        loop.run_forever()
 
     def test_scan(self):
         loop = asyncio.get_event_loop()
@@ -55,6 +56,7 @@ class TestHDMINetwork(TestCase):
         self.assertEqual("Test3", device.osd_name)
         self.assertEqual(2, device.power_status)
         network.stop()
+        loop.run_forever()
 
 
 class MockConfig:
