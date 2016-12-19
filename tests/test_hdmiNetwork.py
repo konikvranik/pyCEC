@@ -17,7 +17,7 @@ class TestHdmiNetwork(TestCase):
         network._scan_delay = 0
         network._adapter._config.SetCommandCallback(network.command_callback)
         network.scan()
-        self._loop.run_until_complete(asyncio.sleep(.1, self._loop))
+        self._loop.run_until_complete(asyncio.sleep(1, self._loop))
 
         self.assertIn(HDMIDevice(0), network.devices)
         device = network.get_device(0)
@@ -43,7 +43,7 @@ class TestHdmiNetwork(TestCase):
         network._scan_delay = 0
         network._config.SetCommandCallback(network.command_callback)
         network.scan()
-        self._loop.run_until_complete(asyncio.sleep(.1, self._loop))
+        self._loop.run_until_complete(asyncio.sleep(1, self._loop))
         for i in [0, 1, 3, 5]:
             self.assertIn(HDMIDevice(i), network.devices)
         for i in [2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14]:
