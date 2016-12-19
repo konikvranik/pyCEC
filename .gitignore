@@ -1,0 +1,10 @@
+.idea
+*.pyc
+**/*.pyc
+build
+.eggs
+.cache
+.coverage
+pyCEC.egg-info
+dist
+__pycache__

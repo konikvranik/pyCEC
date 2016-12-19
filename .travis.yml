@@ -1,0 +1,25 @@
+language: python
+
+python:
+  - "3.4"
+  - "3.5"
+  - "3.5-dev" # 3.5 development branch
+  - "3.6-dev" # 3.6 development branch
+  - "nightly" # currently points to 3.7-dev
+
+install:
+  - pip install -r test_requirements.txt
+  - pip install .
+  - pip install coveralls
+  - pip install codeclimate-test-reporter
+  - pip install pytest-cov
+  #- python setup.py -q install
+  #- python setup.py clean
+
+# command to run tests
+script:
+  - py.test --cov=pycec tests/
+  - coverage run --source=pycec `which py.test`
+after_success:
+  - coveralls
+  - codeclimate-test-reporter
