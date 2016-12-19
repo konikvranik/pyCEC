@@ -77,19 +77,19 @@ class HDMIDevice:
     def is_off(self):
         return self.power_status == 0x01
 
-    def turn_on(self):
+    def turn_on(self):  # pragma: no cover
         self._loop.create_task(self.async_turn_on())
 
     @asyncio.coroutine
-    def async_turn_on(self):
+    def async_turn_on(self):  # pragma: no cover
         command = CecCommand(0x44, self.logical_address, att=[0x40])
         yield from self.async_send_command(command)
 
-    def turn_off(self):
+    def turn_off(self):  # pragma: no cover
         self._loop.create_task(self.async_turn_off())
 
     @asyncio.coroutine
-    def async_turn_off(self):
+    def async_turn_off(self):  # pragma: no cover
         command = CecCommand(0x44, self.logical_address, att=[0x6c])
         yield from self.async_send_command(command)
 
@@ -100,8 +100,8 @@ class HDMIDevice:
     @property
     def type_name(self):
         return (
-            DEVICE_TYPE_NAMES[self.type] if self.type in DEVICE_TYPE_NAMES else
-            DEVICE_TYPE_NAMES[0])
+            DEVICE_TYPE_NAMES[self.type] if self.type in range(6) else
+            DEVICE_TYPE_NAMES[2])
 
     def update_callback(self, command: CecCommand):
         _LOGGER.debug("Updating device  ")

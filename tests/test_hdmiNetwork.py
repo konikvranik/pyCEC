@@ -58,6 +58,8 @@ class TestHDMINetwork(TestCase):
         device = network.get_device(3)
         self.assertEqual("Test3", device.osd_name)
         self.assertEqual(2, device.power_status)
+        for d in network.devices:
+            d.stop()
         network.stop()
         loop.run_forever()
 
@@ -100,7 +102,7 @@ class MockAdapter:
             att = [0x00, 0x09, 0xB0]
         elif command.cmd == CMD_PHYSICAL_ADDRESS[0]:
             cmd = CMD_PHYSICAL_ADDRESS[1]
-            att = [0x09, 0xB0]
+            att = [0x09, 0xB0, 0x02]
         response = CecCommand(cmd, src=command.dst, dst=command.src, att=att)
         self._config.GetCommandCallback()(">> " + response.raw)
 
