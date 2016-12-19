@@ -1,8 +1,8 @@
 import asyncio
 from unittest import TestCase
 
+from pycec.commands import CecCommand
 from pycec.const import CMD_POWER_STATUS, CMD_OSD_NAME, CMD_VENDOR, CMD_PHYSICAL_ADDRESS
-from pycec.datastruct import CecCommand
 from pycec.network import HdmiNetwork, HdmiDevice
 
 
@@ -15,8 +15,10 @@ class TestHdmiNetwork(TestCase):
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0, loop=self._loop)
         network._scan_delay = 0
-        network.async_scan()
-        self._loop.run_until_complete(asyncio.sleep(1, loop=self._loop))
+        #network.scan()
+        self._loop.create_task(network.async_init())
+        self._loop.create_task(network.async_scan())
+        self._loop.run_until_complete(asyncio.sleep(1,loop=self._loop))
 
         self.assertIn(HdmiDevice(0), network.devices)
         device = network.get_device(0)
@@ -40,7 +42,7 @@ class TestHdmiNetwork(TestCase):
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0, loop=self._loop)
         network._scan_delay = 0
-        network.async_scan()
+        network.scan()
         #        clear_event_loop()
         for i in [0, 1, 3, 5]:
             self.assertIn(HdmiDevice(i), network.devices)
@@ -80,23 +82,22 @@ class MockAdapter:
         return self._data[i]
 
     def Transmit(self, command):
-        response = CecCommand(src=command.dst, dst=command.src)
+        cmd = None
+        att = None
         if command.cmd == CMD_POWER_STATUS[0]:
-            response.cmd = CMD_POWER_STATUS[1]
-            response.att = [2]
-            self._config.GetCommandCallback()(">> " + response.raw)
+            cmd = CMD_POWER_STATUS[1]
+            att = [2]
         elif command.cmd == CMD_OSD_NAME[0]:
-            response.cmd = CMD_OSD_NAME[1]
-            response.att = (ord(i) for i in ("Test%d" % command.dst))
-            self._config.GetCommandCallback()(">> " + response.raw)
+            cmd = CMD_OSD_NAME[1]
+            att = (ord(i) for i in ("Test%d" % command.dst))
         elif command.cmd == CMD_VENDOR[0]:
-            response.cmd = CMD_VENDOR[1]
-            response.att = [0x00, 0x09, 0xB0]
-            self._config.GetCommandCallback()(">> " + response.raw)
+            cmd = CMD_VENDOR[1]
+            att = [0x00, 0x09, 0xB0]
         elif command.cmd == CMD_PHYSICAL_ADDRESS[0]:
-            response.cmd = CMD_PHYSICAL_ADDRESS[1]
-            response.att = [0x09, 0xB0]
-            self._config.GetCommandCallback()(">> " + response.raw)
+            cmd = CMD_PHYSICAL_ADDRESS[1]
+            att = [0x09, 0xB0]
+        response = CecCommand(cmd, src=command.dst, dst=command.src, att=att)
+        self._config.GetCommandCallback()(">> " + response.raw)
 
     def CommandFromString(self, cmd: str) -> CecCommand:
         return CecCommand(cmd)
