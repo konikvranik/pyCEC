@@ -2,7 +2,8 @@ import asyncio
 from unittest import TestCase
 
 from pycec.commands import CecCommand
-from pycec.const import CMD_POWER_STATUS, CMD_OSD_NAME, CMD_VENDOR, CMD_PHYSICAL_ADDRESS
+from pycec.const import CMD_POWER_STATUS, CMD_OSD_NAME, CMD_VENDOR, \
+    CMD_PHYSICAL_ADDRESS
 from pycec.network import HDMINetwork, HDMIDevice
 
 
@@ -10,7 +11,8 @@ class TestHDMINetwork(TestCase):
     def test_devices(self):
         loop = asyncio.get_event_loop()
         network = HDMINetwork(MockConfig(), adapter=MockAdapter(
-            [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
+            [True, True, False, True, False, True, False, False, False, False,
+             False, False, False, False, False,
              False]), scan_interval=0, loop=loop)
         network._scan_delay = 0
         network._adapter._config.SetCommandCallback(network.command_callback)
@@ -30,8 +32,9 @@ class TestHDMINetwork(TestCase):
     def test_scan(self):
         loop = asyncio.get_event_loop()
         network = HDMINetwork(MockConfig(), adapter=MockAdapter(
-            [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
-             False]), scan_interval=0, loop=loop)
+            [True, True, False, True, False, True, False, False, False, False,
+             False, False, False, False, False, False]), scan_interval=0,
+                              loop=loop)
         network._scan_delay = 0
         network._adapter._config.SetCommandCallback(network.command_callback)
         network.scan()

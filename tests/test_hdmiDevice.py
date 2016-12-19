@@ -1,20 +1,22 @@
 from unittest import TestCase
 
 from pycec.commands import CecCommand
-from pycec.const import CMD_POWER_STATUS, CMD_VENDOR, CMD_OSD_NAME, CMD_PHYSICAL_ADDRESS
+from pycec.const import CMD_POWER_STATUS, CMD_VENDOR, CMD_OSD_NAME, \
+    CMD_PHYSICAL_ADDRESS
 
 from pycec.network import HDMIDevice
 
 
 class TestHdmiDevice(TestCase):
-
     def test_logical_address(self):
         device = HDMIDevice(2)
         self.assertEqual(device.logical_address, 2)
 
     def test_update(self):
         device = HDMIDevice(2)
-        cmd = CecCommand('02:%02x:4f:6e:6b:79:6f:20:48:54:58:2d:32:32:48:44:58' % CMD_OSD_NAME[1])
+        cmd = CecCommand(
+            '02:%02x:4f:6e:6b:79:6f:20:48:54:58:2d:32:32:48:44:58' %
+            CMD_OSD_NAME[1])
         device.update_callback(cmd)
         self.assertEqual(device.osd_name, 'Onkyo HTX-22HDX')
 
