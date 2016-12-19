@@ -6,8 +6,8 @@ from functools import reduce
 
 from pycec import _LOGGER, CecConfig
 from pycec.commands import CecCommand
-from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR
 from pycec.const import CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES
+from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR
 from pycec.datastruct import PhysicalAddress
 
 DEFAULT_SCAN_INTERVAL = 30
@@ -18,8 +18,10 @@ DEFAULT_SCAN_DELAY = 1
 class HDMIDevice:
     def __init__(self, logical_address: int, network=None,
                  update_period=DEFAULT_UPDATE_PERIOD,
-                 loop=asyncio.get_event_loop()):
+                 loop=None):
         self._loop = loop
+        if self._loop is None:
+            self._loop = asyncio.get_event_loop()
         self._logical_address = logical_address
         self.name = "hdmi_%x" % logical_address
         self._physical_address = None
