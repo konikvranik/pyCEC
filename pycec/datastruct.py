@@ -16,7 +16,8 @@ class PhysicalAddress:
         if isinstance(address, (str,)):
             address = list(int(x, 16) for x in address.split(':'))
         if isinstance(address, (tuple, list,)):
-            self._physical_address = reduce(lambda x, y: x * 0x100 + y, address)
+            self._physical_address = reduce(
+                lambda x, y: x * 0x100 + y, address)
         elif isinstance(address, (int,)):
             self._physical_address = address
 

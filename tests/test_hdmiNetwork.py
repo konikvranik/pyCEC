@@ -2,7 +2,8 @@ import asyncio
 from unittest import TestCase
 
 from pycec.commands import CecCommand
-from pycec.const import CMD_POWER_STATUS, CMD_OSD_NAME, CMD_VENDOR, CMD_PHYSICAL_ADDRESS
+from pycec.const import CMD_POWER_STATUS, CMD_OSD_NAME, CMD_VENDOR, \
+    CMD_PHYSICAL_ADDRESS
 from pycec.network import HDMINetwork, HDMIDevice
 
 
@@ -10,7 +11,8 @@ class TestHDMINetwork(TestCase):
     def test_devices(self):
         loop = asyncio.get_event_loop()
         network = HDMINetwork(MockConfig(), adapter=MockAdapter(
-            [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
+            [True, True, False, True, False, True, False, False, False, False,
+             False, False, False, False, False,
              False]), scan_interval=0, loop=loop)
         network._scan_delay = 0
         network._adapter._config.SetCommandCallback(network.command_callback)
@@ -30,8 +32,9 @@ class TestHDMINetwork(TestCase):
     def test_scan(self):
         loop = asyncio.get_event_loop()
         network = HDMINetwork(MockConfig(), adapter=MockAdapter(
-            [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
-             False]), scan_interval=0, loop=loop)
+            [True, True, False, True, False, True, False, False, False, False,
+             False, False, False, False, False, False]), scan_interval=0,
+                              loop=loop)
         network._scan_delay = 0
         network._adapter._config.SetCommandCallback(network.command_callback)
         network.scan()
@@ -55,6 +58,8 @@ class TestHDMINetwork(TestCase):
         device = network.get_device(3)
         self.assertEqual("Test3", device.osd_name)
         self.assertEqual(2, device.power_status)
+        for d in network.devices:
+            d.stop()
         network.stop()
         loop.run_forever()
 
@@ -97,7 +102,7 @@ class MockAdapter:
             att = [0x00, 0x09, 0xB0]
         elif command.cmd == CMD_PHYSICAL_ADDRESS[0]:
             cmd = CMD_PHYSICAL_ADDRESS[1]
-            att = [0x09, 0xB0]
+            att = [0x09, 0xB0, 0x02]
         response = CecCommand(cmd, src=command.dst, dst=command.src, att=att)
         self._config.GetCommandCallback()(">> " + response.raw)
 

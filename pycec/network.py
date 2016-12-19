@@ -6,8 +6,8 @@ from functools import reduce
 
 from pycec import _LOGGER, CecConfig
 from pycec.commands import CecCommand
-from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR
 from pycec.const import CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES
+from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR
 from pycec.datastruct import PhysicalAddress
 
 DEFAULT_SCAN_INTERVAL = 30
@@ -18,7 +18,7 @@ DEFAULT_SCAN_DELAY = 1
 class HDMIDevice:
     def __init__(self, logical_address: int, network=None,
                  update_period=DEFAULT_UPDATE_PERIOD,
-                 loop=asyncio.get_event_loop()):
+                 loop=None):
         self._loop = loop
         self._logical_address = logical_address
         self.name = "hdmi_%x" % logical_address
@@ -77,19 +77,19 @@ class HDMIDevice:
     def is_off(self):
         return self.power_status == 0x01
 
-    def turn_on(self):
+    def turn_on(self):  # pragma: no cover
         self._loop.create_task(self.async_turn_on())
 
     @asyncio.coroutine
-    def async_turn_on(self):
+    def async_turn_on(self):  # pragma: no cover
         command = CecCommand(0x44, self.logical_address, att=[0x40])
         yield from self.async_send_command(command)
 
-    def turn_off(self):
+    def turn_off(self):  # pragma: no cover
         self._loop.create_task(self.async_turn_off())
 
     @asyncio.coroutine
-    def async_turn_off(self):
+    def async_turn_off(self):  # pragma: no cover
         command = CecCommand(0x44, self.logical_address, att=[0x6c])
         yield from self.async_send_command(command)
 
@@ -100,8 +100,8 @@ class HDMIDevice:
     @property
     def type_name(self):
         return (
-            DEVICE_TYPE_NAMES[self.type] if self.type in DEVICE_TYPE_NAMES else
-            DEVICE_TYPE_NAMES[0])
+            DEVICE_TYPE_NAMES[self.type] if self.type in range(6) else
+            DEVICE_TYPE_NAMES[2])
 
     def update_callback(self, command: CecCommand):
         _LOGGER.debug("Updating device  ")
@@ -138,7 +138,7 @@ class HDMIDevice:
             yield from self.async_request_update(CMD_PHYSICAL_ADDRESS[0])
             yield from asyncio.sleep(self._update_period, loop=self._loop)
 
-    def stop(self):
+    def stop(self):  # pragma: no cover
         self._stop = True
 
     @asyncio.coroutine
@@ -340,7 +340,7 @@ class HDMINetwork:
     def stop(self):
         self._loop.stop()
 
-    def set_commnd_callback(self, callback):
+    def set_command_callback(self, callback):
         self._command_callback = callback
 
     def set_new_device_callback(self, callback):
