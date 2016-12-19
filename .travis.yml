@@ -1,8 +1,5 @@
 language: python
 
-addons:
-    code_climate:
-        repo_token: fd9b351ad99d94bb9819fcf6f6747691eccb2d57b75b0b67f0d78f5013f52352
 python:
   - "3.4"
   - "3.5"
