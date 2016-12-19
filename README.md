@@ -1,7 +1,7 @@
 pyCEC
 =====
 
-[![Build Status](https://travis-ci.org/konikvranik/pycec.svg?branch=dev)](https://travis-ci.org/konikvranik/pycec)
+[![Build Status](https://travis-ci.org/konikvranik/pyCEC.svg?branch=dev)](https://travis-ci.org/konikvranik/pyCEC)
 [![Code Climate](https://codeclimate.com/github/konikvranik/pycec/badges/gpa.svg)](https://codeclimate.com/github/konikvranik/pycec)
 [![Test Coverage](https://codeclimate.com/github/konikvranik/pycec/badges/coverage.svg)](https://codeclimate.com/github/konikvranik/pycec/coverage)
 [![Issue Count](https://codeclimate.com/github/konikvranik/pycec/badges/issue_count.svg)](https://codeclimate.com/github/konikvranik/pycec)
