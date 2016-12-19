@@ -1,16 +1,21 @@
 """pyCEC"""
 import logging
 
-import cec
+from pycec.const import TYPE_RECORDER_1
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class CecConfig(cec.libcec_configuration):
+class CecConfig:
     def __init__(self, name: str = None, monitor_only: bool = False, activate_source: bool = False,
-                 device_type=cec.CEC_DEVICE_TYPE_RECORDING_DEVICE):
-        super().__init__()
-        self.bMonitorOnly = 1 if monitor_only else 0
-        self.strDeviceName = name
-        self.bActivateSource = 1 if activate_source else 0
-        self.deviceTypes.Add(device_type)
+                 device_type=TYPE_RECORDER_1):
+        import cec
+        self._cecconfig = cec.libcec_configuration()
+        self._cecconfig.bMonitorOnly = 1 if monitor_only else 0
+        self._cecconfig.strDeviceName = name
+        self._cecconfig.bActivateSource = 1 if activate_source else 0
+        self._cecconfig.deviceTypes.Add(device_type)
+
+    @property
+    def cecconfig(self):
+        return self._cecconfig
