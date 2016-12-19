@@ -21,6 +21,7 @@ script:
   - py.test --cov=pycec tests/
   - coverage run --source=pycec setup.py test
   - coverage run --source=pycec `which py.test`
+
 after_success:
   - codeclimate-test-reporter
   - coveralls
