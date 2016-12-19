@@ -52,8 +52,9 @@ class CecCommand:
     @property
     def raw(self) -> str:
         atts = "".join(((":%02x" % i) for i in self.att))
-        return "%1x%1x:%02x%s" % (
-            self.src if self.src is not None else 0xf, self.dst if self.dst is not None else 0xf, self.cmd, atts)
+        return "%1x%1x:%02x%s" % (self.src if self.src is not None else 0xf,
+                                  self.dst if self.dst is not None else 0xf,
+                                  self.cmd, atts)
 
     def _raw(self, value: str):
         atts = value.split(':')
