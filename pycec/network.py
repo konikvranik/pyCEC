@@ -340,7 +340,7 @@ class HDMINetwork:
     def stop(self):
         self._loop.stop()
 
-    def set_commnd_callback(self, callback):
+    def set_command_callback(self, callback):
         self._command_callback = callback
 
     def set_new_device_callback(self, callback):
