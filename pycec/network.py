@@ -138,7 +138,7 @@ class HDMIDevice:
             yield from self.async_request_update(CMD_PHYSICAL_ADDRESS[0])
             yield from asyncio.sleep(self._update_period, loop=self._loop)
 
-    def stop(self):
+    def stop(self):  # pragma: no cover
         self._stop = True
 
     @asyncio.coroutine

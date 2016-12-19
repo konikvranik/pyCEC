@@ -96,9 +96,10 @@ class TestHDMIDevice(TestCase):
         self.assertFalse(device.is_on)
         self.assertFalse(device.is_off)
         device.update_callback(
-            CecCommand(CMD_OSD_NAME[1], att=list(map(lambda x: ord(x), "Test4"))))
+            CecCommand(CMD_OSD_NAME[1],
+                       att=list(map(lambda x: ord(x), "Test4"))))
         self.assertEqual("Test4", device.osd_name)
         device.update_callback(
-            CecCommand(CMD_VENDOR[1], att=[0x00,0x80,0x45]))
+            CecCommand(CMD_VENDOR[1], att=[0x00, 0x80, 0x45]))
         self.assertEqual(0x008045, device.vendor_id)
         self.assertEqual("Panasonic", device.vendor)
