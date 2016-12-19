@@ -6,55 +6,51 @@ from pycec.const import CMD_POWER_STATUS, CMD_OSD_NAME, CMD_VENDOR, CMD_PHYSICAL
 from pycec.network import HDMINetwork, HDMIDevice
 
 
-class TestHdmiNetwork(TestCase):
+class TestHDMINetwork(TestCase):
+
     def setUp(self):
         self._loop = asyncio.get_event_loop()
-
-    def test_scan(self):
-        network = HDMINetwork(MockConfig(), adapter=MockAdapter(
+        self.network = HDMINetwork(MockConfig(), adapter=MockAdapter(
             [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
              False]), scan_interval=0, loop=self._loop)
-        network._scan_delay = 0
-        network._adapter._config.SetCommandCallback(network.command_callback)
-        network.scan()
+        self.network._scan_delay = 0
+        self.network._adapter._config.SetCommandCallback(self.network.command_callback)
+
+    def test_scan(self):
+        self.network.scan()
         self._loop.run_until_complete(asyncio.sleep(1, self._loop))
 
-        self.assertIn(HDMIDevice(0), network.devices)
-        device = network.get_device(0)
+        self.assertIn(HDMIDevice(0), self.network.devices)
+        device = self.network.get_device(0)
         self.assertEqual("Test0", device.osd_name)
         self.assertEqual(2, device.power_status)
 
-        self.assertIn(HDMIDevice(1), network.devices)
-        device = network.get_device(1)
+        self.assertIn(HDMIDevice(1), self.network.devices)
+        device = self.network.get_device(1)
         self.assertEqual("Test1", device.osd_name)
         self.assertEqual(2, device.power_status)
 
-        self.assertNotIn(HDMIDevice(2), network.devices)
+        self.assertNotIn(HDMIDevice(2), self.network.devices)
 
-        self.assertIn(HDMIDevice(3), network.devices)
-        device = network.get_device(3)
+        self.assertIn(HDMIDevice(3), self.network.devices)
+        device = self.network.get_device(3)
         self.assertEqual("Test3", device.osd_name)
         self.assertEqual(2, device.power_status)
 
     def test_devices(self):
-        network = HDMINetwork(MockConfig(), adapter=MockAdapter(
-            [True, True, False, True, False, True, False, False, False, False, False, False, False, False, False,
-             False]), scan_interval=0, loop=self._loop)
-        network._scan_delay = 0
-        network._config.SetCommandCallback(network.command_callback)
-        network.scan()
+        self.network.scan()
         self._loop.run_until_complete(asyncio.sleep(1, self._loop))
         for i in [0, 1, 3, 5]:
-            self.assertIn(HDMIDevice(i), network.devices)
+            self.assertIn(HDMIDevice(i), self.network.devices)
         for i in [2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14]:
-            self.assertNotIn(HDMIDevice(i), network.devices)
-        for d in network.devices:
+            self.assertNotIn(HDMIDevice(i), self.network.devices)
+        for d in self.network.devices:
             d.stop()
         self._loop.stop()
 
     def tearDown(self):
-        self._loop.stop()
-        self._loop.run_forever()
+        pass
+        # self.network.stop()
 
 
 class MockConfig:
