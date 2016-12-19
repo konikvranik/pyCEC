@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 PACKAGES = find_packages(exclude=['tests', 'tests.*', 'build'])
 
 REQUIRES = [
-    #'cec',
+    # 'cec',
 ]
 
 
@@ -25,7 +25,8 @@ setup(
     author="Petr Vraník",
     author_email="hpa@suteren.net",
     description=(
-        "Provide HDMI CEC devices as objects, especially for use with Home Assistant"),
+        "Provide HDMI CEC devices as objects," +
+        " especially for use with Home Assistant"),
     license="MIT",
     keywords="cec hdmi home-assistant",
     url="https://github.com/konikvranik/pycec/",

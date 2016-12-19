@@ -6,7 +6,8 @@ from functools import reduce
 
 from pycec import _LOGGER, CecConfig
 from pycec.commands import CecCommand
-from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR, CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES
+from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR
+from pycec.const import CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES
 from pycec.datastruct import PhysicalAddress
 
 DEFAULT_SCAN_INTERVAL = 30
@@ -15,7 +16,8 @@ DEFAULT_SCAN_DELAY = 1
 
 
 class HDMIDevice:
-    def __init__(self, logical_address: int, network=None, update_period=DEFAULT_UPDATE_PERIOD,
+    def __init__(self, logical_address: int, network=None,
+                 update_period=DEFAULT_UPDATE_PERIOD,
                  loop=asyncio.get_event_loop()):
         self._loop = loop
         self._logical_address = logical_address
@@ -59,7 +61,9 @@ class HDMIDevice:
 
     @property
     def vendor(self) -> str:
-        return VENDORS[self._vendor_id] if self._vendor_id in VENDORS else hex(self._vendor_id)
+        return (
+            VENDORS[self._vendor_id] if self._vendor_id in VENDORS else hex(
+                self._vendor_id))
 
     @property
     def osd_name(self) -> str:
@@ -95,7 +99,9 @@ class HDMIDevice:
 
     @property
     def type_name(self):
-        return DEVICE_TYPE_NAMES[self.type] if self.type in DEVICE_TYPE_NAMES else DEVICE_TYPE_NAMES[0]
+        return (
+            DEVICE_TYPE_NAMES[self.type] if self.type in DEVICE_TYPE_NAMES else
+            DEVICE_TYPE_NAMES[0])
 
     def update_callback(self, command: CecCommand):
         _LOGGER.debug("Updating device  ")
@@ -152,21 +158,24 @@ class HDMIDevice:
         return self._updates[cmd]
 
     def __eq__(self, other):
-        return isinstance(other, (HDMIDevice,)) and self.logical_address == other.logical_address
+        return (isinstance(other, (
+            HDMIDevice,)) and self.logical_address == other.logical_address)
 
     def __hash__(self):
         return self._logical_address
 
     def __str__(self):
         return "HDMI %d: %s, %s (%s), power %s" % (
-            self.logical_address, self.vendor, self.osd_name, str(self.physical_address), self.power_status)
+            self.logical_address, self.vendor, self.osd_name,
+            str(self.physical_address), self.power_status)
 
     def set_update_callback(self, callback):
         self._update_callback = callback
 
 
 class HDMINetwork:
-    def __init__(self, config, scan_interval=DEFAULT_SCAN_INTERVAL, loop=None, adapter=None):
+    def __init__(self, config, scan_interval=DEFAULT_SCAN_INTERVAL, loop=None,
+                 adapter=None):
         if loop is None:
             self._loop = asyncio.new_event_loop()
         else:
@@ -199,8 +208,9 @@ class HDMINetwork:
         for a in adapters:
             _LOGGER.info("found a CEC adapter:")
             _LOGGER.info("port:     " + a.strComName)
-            _LOGGER.info(
-                "vendor:   " + (VENDORS[a.iVendorId] if a.iVendorId in VENDORS else hex(a.iVendorId)))
+            _LOGGER.info("vendor:   " + (
+                VENDORS[a.iVendorId] if a.iVendorId in VENDORS else hex(
+                    a.iVendorId)))
             _LOGGER.info("product:  " + hex(a.iProductId))
             a = a.strComName
         if a is None:
@@ -241,7 +251,8 @@ class HDMINetwork:
             _LOGGER.error("Device not initialized!!!")
             return
         for d in range(15):
-            self._loop.run_in_executor(self._io_executor, self._io_poll_device, d)
+            self._loop.run_in_executor(
+                self._io_executor, self._io_poll_device, d)
             yield
 
     def _io_poll_device(self, d):
@@ -249,13 +260,15 @@ class HDMINetwork:
         if self._device_status[d] and d not in self._devices:
             self._devices[d] = HDMIDevice(d, self, loop=self._loop)
             if self._device_added_callback:
-                self._loop.call_soon_threadsafe(self._device_added_callback, self._devices[d])
+                self._loop.call_soon_threadsafe(self._device_added_callback,
+                                                self._devices[d])
             self._loop.create_task(self._devices[d].async_run())
             _LOGGER.debug("Found device %d", d)
         elif not self._device_status[d] and d in self._devices:
             self.get_device(d).stop()
             if self._device_removed_callback:
-                self._loop.call_soon_threadsafe(self._device_removed_callback, self._devices[d])
+                self._loop.call_soon_threadsafe(self._device_removed_callback,
+                                                self._devices[d])
             del (self._devices[d])
 
     def send_command(self, command):
@@ -272,8 +285,9 @@ class HDMINetwork:
         _LOGGER.debug("Sending command %s", command)
         if command.src is None or command.src == 0xf:
             command.src = self._adapter.GetLogicalAddresses().primary
-        self._loop.run_in_executor(self._io_executor, self._adapter.Transmit,
-                                   self._adapter.CommandFromString(command.raw))
+        self._loop.run_in_executor(
+            self._io_executor, self._adapter.Transmit,
+            self._adapter.CommandFromString(command.raw))
 
     @property
     def devices(self) -> tuple:
@@ -320,7 +334,8 @@ class HDMINetwork:
             pass
         if not updated:
             if self._command_callback:
-                self._loop.call_soon_threadsafe(self._command_callback, command)
+                self._loop.call_soon_threadsafe(
+                    self._command_callback, command)
 
     def stop(self):
         self._loop.stop()
