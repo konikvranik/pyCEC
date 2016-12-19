@@ -20,8 +20,6 @@ class HDMIDevice:
                  update_period=DEFAULT_UPDATE_PERIOD,
                  loop=None):
         self._loop = loop
-        if self._loop is None:
-            self._loop = asyncio.get_event_loop()
         self._logical_address = logical_address
         self.name = "hdmi_%x" % logical_address
         self._physical_address = None
