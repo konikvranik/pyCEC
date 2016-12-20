@@ -10,4 +10,5 @@ pyCEC
 =====
 
 
-Purpose of this project is to provide object API to libcec for home-assistant hdmi_cec module.
+Purpose of this project is to provide object API to libcec for home-assistant hdmi_cec module as [primary goal](https://github.com/konikvranik/pyCEC/projects/1)
+and to make TCP <=> HDMI bridge to control HDMI devices over TCP network as a [secondary goal](https://github.com/konikvranik/pyCEC/projects/2).
