@@ -21,7 +21,7 @@ def read(fname):
 
 setup(
     name="pyCEC",
-    version="0.2.1",
+    version="0.2.2",
     author="Petr Vraník",
     author_email="hpa@suteren.net",
     description=(
