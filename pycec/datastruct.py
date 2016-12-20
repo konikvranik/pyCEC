@@ -4,10 +4,8 @@ from functools import reduce
 
 
 def _to_digits(x: int) -> List[int]:
-    while x > 0:
-        yield x % 0x10
-        x //= 0x10
-    return x
+    for x in ("%04x" % x):
+        yield int(x, 16)
 
 
 class PhysicalAddress:
@@ -23,8 +21,7 @@ class PhysicalAddress:
 
     @property
     def aslist(self) -> List[int]:
-        return list(
-            reversed(list(x for x in _to_digits(self._physical_address))))
+        return list(x for x in _to_digits(self._physical_address))
 
     @property
     def asint(self) -> int:
@@ -33,8 +30,11 @@ class PhysicalAddress:
     @property
     def ascmd(self) -> str:
         return "%x%x:%x%x" % tuple(
-            reversed([x for x in _to_digits(self._physical_address)]))
+            x for x in _to_digits(self._physical_address))
+
+    @property
+    def asstr(self) -> str:
+        return ".".join(("%x" % x) for x in _to_digits(self._physical_address))
 
     def __str__(self):
-        return ".".join(
-            reversed([("%x" % x) for x in _to_digits(self._physical_address)]))
+        return self.asstr
