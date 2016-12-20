@@ -1,12 +1,12 @@
 import asyncio
 from concurrent.futures.thread import ThreadPoolExecutor
-from multiprocessing import Queue
-
 from functools import reduce
+from multiprocessing import Queue
 
 from pycec import _LOGGER, CecConfig
 from pycec.commands import CecCommand
-from pycec.const import CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES
+from pycec.const import CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES, \
+    CMD_ACTIVE_SOURCE, CMD_STREAM_PATH, ADDR_BROADCAST
 from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR
 from pycec.datastruct import PhysicalAddress
 
@@ -153,6 +153,10 @@ class HDMIDevice:
         _LOGGER.debug("Device sending command %s", command)
         yield from self._network.async_send_command(command)
 
+    def active_source(self):
+        self._loop.create_task(
+            self._network.async_active_source(self.physical_address))
+
     @property
     def is_updated(self, cmd):
         return self._updates[cmd]
@@ -288,6 +292,42 @@ class HDMINetwork:
         self._loop.run_in_executor(
             self._io_executor, self._adapter.Transmit,
             self._adapter.CommandFromString(command.raw))
+
+    def standby(self):
+        self._loop.create_task(self.async_standby())
+
+    @asyncio.coroutine
+    def async_standby(self):
+        _LOGGER.debug("Queuing system standby")
+        self._loop.call_soon_threadsafe(self.io_standby)
+
+    def io_standby(self):
+        _LOGGER.debug("System standby")
+        self._loop.run_in_executor(self._io_executor,
+                                   self._adapter.StandbyDevices)
+
+    def power_on(self):
+        self._loop.create_task(self.async_power_on())
+
+    @asyncio.coroutine
+    def async_power_on(self):
+        _LOGGER.debug("Queuing power on")
+        self._loop.call_soon_threadsafe(self.io_power_on)
+
+    def io_power_on(self):
+        _LOGGER.debug("power on")
+        self._loop.run_in_executor(self._io_executor,
+                                   self._adapter.PowerOnDevices)
+
+    def active_source(self, source: PhysicalAddress):
+        self._loop.create_task(self.async_active_source(source))
+
+    @asyncio.coroutine
+    def async_active_source(self, addr: PhysicalAddress):
+        yield from self.async_send_command(
+            CecCommand(CMD_ACTIVE_SOURCE, ADDR_BROADCAST, att=addr.aslist))
+        yield from self.async_send_command(
+            CecCommand(CMD_STREAM_PATH, ADDR_BROADCAST, att=addr.aslist))
 
     @property
     def devices(self) -> tuple:
