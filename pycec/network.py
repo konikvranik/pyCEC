@@ -134,14 +134,14 @@ class HDMIDevice:
         while not self._stop:
             if not self._stop:
                 yield from self.async_request_update(CMD_POWER_STATUS[0])
-            if not self._stop: yield from self.async_request_update(
-                CMD_OSD_NAME[0])
-            if not self._stop: yield from self.async_request_update(
-                CMD_VENDOR[0])
-            if not self._stop: yield from self.async_request_update(
-                CMD_PHYSICAL_ADDRESS[0])
-            if not self._stop: yield from asyncio.sleep(
-                self._update_period, loop=self._loop)
+            if not self._stop:
+                yield from self.async_request_update(CMD_OSD_NAME[0])
+            if not self._stop:
+                yield from self.async_request_update(CMD_VENDOR[0])
+            if not self._stop:
+                yield from self.async_request_update(CMD_PHYSICAL_ADDRESS[0])
+            if not self._stop:
+                yield from asyncio.sleep(self._update_period, loop=self._loop)
 
     def stop(self):  # pragma: no cover
         self._stop = True
