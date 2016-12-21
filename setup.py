@@ -11,7 +11,7 @@ REQUIRES = [
 
 setup(
     name="pyCEC",
-    version="0.3.2",
+    version="0.3.3",
     author="Petr Vraník",
     author_email="hpa@suteren.net",
     description=(
