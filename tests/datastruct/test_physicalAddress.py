@@ -4,6 +4,23 @@ from pycec.datastruct import PhysicalAddress
 
 
 class TestPhysicalAddress(TestCase):
+
+    def test_creation(self):
+        pa = PhysicalAddress('8F:65')
+        self.assertEqual(0x8f65, pa.asint)
+        pa = PhysicalAddress('0F:60')
+        self.assertEqual(0x0f60, pa.asint)
+        pa = PhysicalAddress('2.F.6.5')
+        self.assertEqual(0x2f65, pa.asint)
+        pa = PhysicalAddress('0.F.6.0')
+        self.assertEqual(0x0f60, pa.asint)
+        pa = PhysicalAddress([2,15,6,4])
+        self.assertEqual(0x2f64, pa.asint)
+        pa = PhysicalAddress([0,15,6,0])
+        self.assertEqual(0x0f60, pa.asint)
+        pa = PhysicalAddress(0x0f60)
+        self.assertEqual(0x0f60, pa.asint)
+
     def test_aslist(self):
         pa = PhysicalAddress("8f:ab")
         self.assertEqual(pa.aslist, [0x8, 0xf, 0xa, 0xb])
