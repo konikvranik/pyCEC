@@ -22,8 +22,9 @@ class PhysicalAddress:
             self._physical_address = address
 
     @property
-    def aslist(self) -> List[int]:
-        return list(x for x in _to_digits(self._physical_address))
+    def asattr(self) -> List[int]:
+        return [self._physical_address // 0x100,
+                self._physical_address % 0x100]
 
     @property
     def asint(self) -> int:

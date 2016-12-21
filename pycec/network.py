@@ -331,9 +331,9 @@ class HDMINetwork:
     @asyncio.coroutine
     def async_active_source(self, addr: PhysicalAddress):
         yield from self.async_send_command(
-            CecCommand(CMD_ACTIVE_SOURCE, ADDR_BROADCAST, att=addr.aslist))
+            CecCommand(CMD_ACTIVE_SOURCE, ADDR_BROADCAST, att=addr.asattr))
         yield from self.async_send_command(
-            CecCommand(CMD_STREAM_PATH, ADDR_BROADCAST, att=addr.aslist))
+            CecCommand(CMD_STREAM_PATH, ADDR_BROADCAST, att=addr.asattr))
 
     @property
     def devices(self) -> tuple:

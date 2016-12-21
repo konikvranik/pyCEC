@@ -11,6 +11,7 @@ class TestPhysicalAddress(TestCase):
         self.assertEqual(0x0f60, pa.asint)
         pa = PhysicalAddress('2.F.6.5')
         self.assertEqual(0x2f65, pa.asint)
+        self.assertEqual('2.f.6.5', pa.asstr)
         pa = PhysicalAddress('0.F.6.0')
         self.assertEqual(0x0f60, pa.asint)
         pa = PhysicalAddress([2, 15, 6, 4])
@@ -22,11 +23,11 @@ class TestPhysicalAddress(TestCase):
 
     def test_aslist(self):
         pa = PhysicalAddress("8f:ab")
-        self.assertEqual(pa.aslist, [0x8, 0xf, 0xa, 0xb])
+        self.assertEqual(pa.asattr, [0x8f, 0xab])
         pa = PhysicalAddress("00:00")
-        self.assertEqual(pa.aslist, [0x0, 0x0, 0x0, 0x0])
+        self.assertEqual(pa.asattr, [0x0, 0x0])
         pa = PhysicalAddress("00:10")
-        self.assertEqual(pa.aslist, [0x0, 0x0, 0x1, 0x0])
+        self.assertEqual(pa.asattr, [0x0, 0x10])
 
     def test_asint(self):
         pa = PhysicalAddress("8f:ab")
