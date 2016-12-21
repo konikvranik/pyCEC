@@ -132,11 +132,16 @@ class HDMIDevice:
     def async_run(self):
         _LOGGER.debug("Starting device %d", self.logical_address)
         while not self._stop:
-            yield from self.async_request_update(CMD_POWER_STATUS[0])
-            yield from self.async_request_update(CMD_OSD_NAME[0])
-            yield from self.async_request_update(CMD_VENDOR[0])
-            yield from self.async_request_update(CMD_PHYSICAL_ADDRESS[0])
-            yield from asyncio.sleep(self._update_period, loop=self._loop)
+            if not self._stop:
+                yield from self.async_request_update(CMD_POWER_STATUS[0])
+            if not self._stop: yield from self.async_request_update(
+                CMD_OSD_NAME[0])
+            if not self._stop: yield from self.async_request_update(
+                CMD_VENDOR[0])
+            if not self._stop: yield from self.async_request_update(
+                CMD_PHYSICAL_ADDRESS[0])
+            if not self._stop: yield from asyncio.sleep(
+                self._update_period, loop=self._loop)
 
     def stop(self):  # pragma: no cover
         self._stop = True
@@ -180,7 +185,8 @@ class HDMIDevice:
 class HDMINetwork:
     def __init__(self, config, scan_interval=DEFAULT_SCAN_INTERVAL, loop=None,
                  adapter=None):
-        if loop is None:
+        self._managed_loop = loop is None
+        if self._managed_loop:
             self._loop = asyncio.new_event_loop()
         else:
             _LOGGER.warn("Be aware! Network is using shared event loop!")
@@ -354,7 +360,7 @@ class HDMINetwork:
     def start(self):
         self._loop.create_task(self.async_init())
         self._loop.create_task(self.async_watch())
-        if not self._loop.is_running():
+        if self._managed_loop:
             self._loop.run_in_executor(None, self._loop.run_forever)
 
     def command_callback(self, raw_command):
@@ -378,7 +384,10 @@ class HDMINetwork:
                     self._command_callback, command)
 
     def stop(self):
-        self._loop.stop()
+        for d in self.devices:
+            d.stop()
+        if self._managed_loop:
+            self._loop.stop()
 
     def set_command_callback(self, callback):
         self._command_callback = callback
