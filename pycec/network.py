@@ -185,6 +185,7 @@ class HDMIDevice:
 class HDMINetwork:
     def __init__(self, config, scan_interval=DEFAULT_SCAN_INTERVAL, loop=None,
                  adapter=None):
+        self._running = False
         self._managed_loop = loop is None
         if self._managed_loop:
             self._loop = asyncio.new_event_loop()
@@ -347,7 +348,7 @@ class HDMINetwork:
         _LOGGER.debug("Start watching...")
         if loop is None:
             loop = self._loop
-        while True:
+        while self._running:
             if self.initialized:
                 _LOGGER.debug("Sacnning...")
                 yield from self.async_scan()
@@ -358,6 +359,7 @@ class HDMINetwork:
                 yield from asyncio.sleep(1, loop=loop)
 
     def start(self):
+        self._running = True
         self._loop.create_task(self.async_init())
         self._loop.create_task(self.async_watch())
         if self._managed_loop:
@@ -384,6 +386,7 @@ class HDMINetwork:
                     self._command_callback, command)
 
     def stop(self):
+        self._running = False
         for d in self.devices:
             d.stop()
         if self._managed_loop:
