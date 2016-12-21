@@ -1,7 +1,5 @@
 from typing import List
 
-from functools import reduce
-
 
 def _to_digits(x: int) -> List[int]:
     for x in ("%04x" % x):
@@ -14,8 +12,12 @@ class PhysicalAddress:
         if isinstance(address, (str,)):
             address = int(address.replace('.', '').replace(':', ''), 16)
         if isinstance(address, (tuple, list,)):
-            self._physical_address = reduce(
-                lambda x, y: x * 0x100 + y, address)
+            if len(address) == 2:
+                self._physical_address = int("%02x%02x" % tuple(address), 16)
+            elif len(address) == 4:
+                self._physical_address = int("%x%x%x%x" % tuple(address), 16)
+            else:
+                raise AttributeError("Incorrect count of members in list!")
         elif isinstance(address, (int,)):
             self._physical_address = address
 
