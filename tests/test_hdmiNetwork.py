@@ -27,6 +27,7 @@ class TestHDMINetwork(TestCase):
         for d in network.devices:
             d.stop()
         network.stop()
+        loop.stop()
         loop.run_forever()
 
     def test_scan(self):
@@ -61,6 +62,7 @@ class TestHDMINetwork(TestCase):
         for d in network.devices:
             d.stop()
         network.stop()
+        loop.stop()
         loop.run_forever()
 
 

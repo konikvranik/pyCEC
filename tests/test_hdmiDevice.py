@@ -34,7 +34,7 @@ class TestHDMIDevice(TestCase):
         cmd = CecCommand('02:%02x:C0:86:01' % CMD_PHYSICAL_ADDRESS[1])
         device.update_callback(cmd)
         self.assertEqual(device.physical_address.ascmd, 'c0:86')
-        self.assertEqual(device.physical_address.aslist, [0xC, 0x0, 0x8, 0x6])
+        self.assertEqual(device.physical_address.asattr, [0xC0, 0x86])
 
     def test_is_on(self):
         device = HDMIDevice(2)

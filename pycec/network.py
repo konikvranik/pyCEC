@@ -1,12 +1,12 @@
 import asyncio
 from concurrent.futures.thread import ThreadPoolExecutor
-from multiprocessing import Queue
-
 from functools import reduce
+from multiprocessing import Queue
 
 from pycec import _LOGGER, CecConfig
 from pycec.commands import CecCommand
-from pycec.const import CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES
+from pycec.const import CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES, \
+    CMD_ACTIVE_SOURCE, CMD_STREAM_PATH, ADDR_BROADCAST
 from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR
 from pycec.datastruct import PhysicalAddress
 
@@ -132,11 +132,16 @@ class HDMIDevice:
     def async_run(self):
         _LOGGER.debug("Starting device %d", self.logical_address)
         while not self._stop:
-            yield from self.async_request_update(CMD_POWER_STATUS[0])
-            yield from self.async_request_update(CMD_OSD_NAME[0])
-            yield from self.async_request_update(CMD_VENDOR[0])
-            yield from self.async_request_update(CMD_PHYSICAL_ADDRESS[0])
-            yield from asyncio.sleep(self._update_period, loop=self._loop)
+            if not self._stop:
+                yield from self.async_request_update(CMD_POWER_STATUS[0])
+            if not self._stop:
+                yield from self.async_request_update(CMD_OSD_NAME[0])
+            if not self._stop:
+                yield from self.async_request_update(CMD_VENDOR[0])
+            if not self._stop:
+                yield from self.async_request_update(CMD_PHYSICAL_ADDRESS[0])
+            if not self._stop:
+                yield from asyncio.sleep(self._update_period, loop=self._loop)
 
     def stop(self):  # pragma: no cover
         self._stop = True
@@ -152,6 +157,10 @@ class HDMIDevice:
     def async_send_command(self, command):
         _LOGGER.debug("Device sending command %s", command)
         yield from self._network.async_send_command(command)
+
+    def active_source(self):
+        self._loop.create_task(
+            self._network.async_active_source(self.physical_address))
 
     @property
     def is_updated(self, cmd):
@@ -176,7 +185,8 @@ class HDMIDevice:
 class HDMINetwork:
     def __init__(self, config, scan_interval=DEFAULT_SCAN_INTERVAL, loop=None,
                  adapter=None):
-        if loop is None:
+        self._managed_loop = loop is None
+        if self._managed_loop:
             self._loop = asyncio.new_event_loop()
         else:
             _LOGGER.warn("Be aware! Network is using shared event loop!")
@@ -289,6 +299,42 @@ class HDMINetwork:
             self._io_executor, self._adapter.Transmit,
             self._adapter.CommandFromString(command.raw))
 
+    def standby(self):
+        self._loop.create_task(self.async_standby())
+
+    @asyncio.coroutine
+    def async_standby(self):
+        _LOGGER.debug("Queuing system standby")
+        self._loop.call_soon_threadsafe(self.io_standby)
+
+    def io_standby(self):
+        _LOGGER.debug("System standby")
+        self._loop.run_in_executor(self._io_executor,
+                                   self._adapter.StandbyDevices)
+
+    def power_on(self):
+        self._loop.create_task(self.async_power_on())
+
+    @asyncio.coroutine
+    def async_power_on(self):
+        _LOGGER.debug("Queuing power on")
+        self._loop.call_soon_threadsafe(self.io_power_on)
+
+    def io_power_on(self):
+        _LOGGER.debug("power on")
+        self._loop.run_in_executor(self._io_executor,
+                                   self._adapter.PowerOnDevices)
+
+    def active_source(self, source: PhysicalAddress):
+        self._loop.create_task(self.async_active_source(source))
+
+    @asyncio.coroutine
+    def async_active_source(self, addr: PhysicalAddress):
+        yield from self.async_send_command(
+            CecCommand(CMD_ACTIVE_SOURCE, ADDR_BROADCAST, att=addr.asattr))
+        yield from self.async_send_command(
+            CecCommand(CMD_STREAM_PATH, ADDR_BROADCAST, att=addr.asattr))
+
     @property
     def devices(self) -> tuple:
         return tuple(self._devices.values())
@@ -314,7 +360,7 @@ class HDMINetwork:
     def start(self):
         self._loop.create_task(self.async_init())
         self._loop.create_task(self.async_watch())
-        if not self._loop.is_running():
+        if self._managed_loop:
             self._loop.run_in_executor(None, self._loop.run_forever)
 
     def command_callback(self, raw_command):
@@ -338,7 +384,10 @@ class HDMINetwork:
                     self._command_callback, command)
 
     def stop(self):
-        self._loop.stop()
+        for d in self.devices:
+            d.stop()
+        if self._managed_loop:
+            self._loop.stop()
 
     def set_command_callback(self, callback):
         self._command_callback = callback
