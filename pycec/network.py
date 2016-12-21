@@ -350,7 +350,7 @@ class HDMINetwork:
             loop = self._loop
         while self._running:
             if self.initialized:
-                _LOGGER.debug("Sacnning...")
+                _LOGGER.debug("Scanning...")
                 yield from self.async_scan()
                 _LOGGER.debug("Sleep...")
                 yield from asyncio.sleep(self._scan_interval, loop=loop)
