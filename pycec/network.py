@@ -1,7 +1,8 @@
 import asyncio
 from concurrent.futures.thread import ThreadPoolExecutor
-from functools import reduce
 from multiprocessing import Queue
+
+from functools import reduce
 
 from pycec import _LOGGER, CecConfig
 from pycec.commands import CecCommand
@@ -144,8 +145,10 @@ class HDMIDevice:
             while not self._stop and self._loop.time() <= (
                         start_time + self._update_period):
                 yield from asyncio.sleep(.3, loop=self._loop)
+        _LOGGER.info("HDMI device %s stopped.", self)
 
     def stop(self):  # pragma: no cover
+        _LOGGER.debug("HDMI device %s stopping", self)
         self._stop = True
 
     @asyncio.coroutine
@@ -363,6 +366,7 @@ class HDMINetwork:
                 yield from asyncio.sleep(1, loop=loop)
 
     def start(self):
+        _LOGGER.info("HDMI network starting...")
         self._running = True
         self._loop.create_task(self.async_init())
         self._loop.create_task(self.async_watch())
@@ -390,11 +394,17 @@ class HDMINetwork:
                     self._command_callback, command)
 
     def stop(self):
+        _LOGGER.debug("HDMI network shutdown.")
         self._running = False
         for d in self.devices:
             d.stop()
         if self._managed_loop:
+            _LOGGER.debug("Stopping HDMI loop.")
             self._loop.stop()
+            _LOGGER.debug("Cleanup loop")
+            asyncio.sleep(3, loop=self._loop)
+            self._loop.close()
+        _LOGGER.info("HDMI network stopped.")
 
     def set_command_callback(self, callback):
         self._command_callback = callback
