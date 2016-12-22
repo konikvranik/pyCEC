@@ -289,7 +289,7 @@ class HDMINetwork:
         config.SetCommandCallback(self.command_callback)
         _LOGGER.debug("Callback set")  # pragma: no cover
         task = self._loop.run_in_executor(self._io_executor, self._init_cec)
-        while not (task.done() or task.cancelled()):
+        while not (task.done() or task.cancelled()) and self._running:
             _LOGGER.debug("Init pending")  # pragma: no cover
             yield from asyncio.sleep(1, loop=self._loop)
         _LOGGER.debug("Init done")  # pragma: no cover
