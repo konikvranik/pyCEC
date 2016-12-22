@@ -1,18 +1,56 @@
 import asyncio
 from concurrent.futures.thread import ThreadPoolExecutor
-from functools import reduce
 from multiprocessing import Queue
+from typing import List
 
-from pycec import _LOGGER, CecConfig
+from functools import reduce
+
+from pycec import _LOGGER
 from pycec.commands import CecCommand
 from pycec.const import CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES, \
-    CMD_ACTIVE_SOURCE, CMD_STREAM_PATH, ADDR_BROADCAST
+    CMD_ACTIVE_SOURCE, CMD_STREAM_PATH, ADDR_BROADCAST, TYPE_RECORDER_1
 from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR
-from pycec.datastruct import PhysicalAddress
 
 DEFAULT_SCAN_INTERVAL = 30
 DEFAULT_UPDATE_PERIOD = 30
 DEFAULT_SCAN_DELAY = 1
+
+
+class PhysicalAddress:
+    def __init__(self, address):
+        self._physical_address = int()
+        if isinstance(address, (str,)):
+            address = int(address.replace('.', '').replace(':', ''), 16)
+        if isinstance(address, (tuple, list,)):
+            if len(address) == 2:
+                self._physical_address = int("%02x%02x" % tuple(address), 16)
+            elif len(address) == 4:
+                self._physical_address = int("%x%x%x%x" % tuple(address), 16)
+            else:
+                raise AttributeError("Incorrect count of members in list!")
+        elif isinstance(address, (int,)):
+            self._physical_address = address
+
+    @property
+    def asattr(self) -> List[int]:
+        return [self._physical_address // 0x100,
+                self._physical_address % 0x100]
+
+    @property
+    def asint(self) -> int:
+        return self._physical_address
+
+    @property
+    def ascmd(self) -> str:
+        return "%x%x:%x%x" % tuple(
+            x for x in _to_digits(self._physical_address))
+
+    @property
+    def asstr(self) -> str:
+        return ".".join(("%x" % x) for x in _to_digits(self._physical_address))
+
+    def __str__(self):
+        return self.asstr
 
 
 class HDMIDevice:
@@ -123,7 +161,7 @@ class HDMIDevice:
             self._osd_name = reduce(lambda x, y: x + chr(y), command.att, "")
             self._updates[CMD_OSD_NAME[0]] = True
             result = True
-        if result:
+        if result:  # pragma: no cover
             if self._update_callback:
                 self._loop.call_soon_threadsafe(self._update_callback, self)
         return result
@@ -140,10 +178,14 @@ class HDMIDevice:
                 yield from self.async_request_update(CMD_VENDOR[0])
             if not self._stop:
                 yield from self.async_request_update(CMD_PHYSICAL_ADDRESS[0])
-            if not self._stop:
-                yield from asyncio.sleep(self._update_period, loop=self._loop)
+            start_time = self._loop.time()
+            while not self._stop and self._loop.time() <= (
+                        start_time + self._update_period):
+                yield from asyncio.sleep(.3, loop=self._loop)
+        _LOGGER.info("HDMI device %s stopped.", self)  # pragma: no cover
 
     def stop(self):  # pragma: no cover
+        _LOGGER.debug("HDMI device %s stopping", self)
         self._stop = True
 
     @asyncio.coroutine
@@ -178,7 +220,7 @@ class HDMIDevice:
             self.logical_address, self.vendor, self.osd_name,
             str(self.physical_address), self.power_status)
 
-    def set_update_callback(self, callback):
+    def set_update_callback(self, callback):  # pragma: no cover
         self._update_callback = callback
 
 
@@ -241,16 +283,16 @@ class HDMINetwork:
 
     @asyncio.coroutine
     def async_init(self):
-        _LOGGER.debug("initializing")
+        _LOGGER.debug("initializing")  # pragma: no cover
         config = self._config
-        _LOGGER.debug("setting callback")
+        _LOGGER.debug("setting callback")  # pragma: no cover
         config.SetCommandCallback(self.command_callback)
-        _LOGGER.debug("Callback set")
+        _LOGGER.debug("Callback set")  # pragma: no cover
         task = self._loop.run_in_executor(self._io_executor, self._init_cec)
-        while not (task.done() or task.cancelled()):
-            _LOGGER.debug("Init pending")
+        while not (task.done() or task.cancelled()) and self._running:
+            _LOGGER.debug("Init pending")  # pragma: no cover
             yield from asyncio.sleep(1, loop=self._loop)
-        _LOGGER.debug("Init done")
+        _LOGGER.debug("Init done")  # pragma: no cover
 
     def scan(self):
         self._loop.create_task(self.async_scan())
@@ -259,7 +301,7 @@ class HDMINetwork:
     def async_scan(self):
         _LOGGER.info("Looking for new devices...")
         if not self.initialized:
-            _LOGGER.error("Device not initialized!!!")
+            _LOGGER.error("Device not initialized!!!")  # pragma: no cover
             return
         for d in range(15):
             self._loop.run_in_executor(
@@ -305,11 +347,11 @@ class HDMINetwork:
 
     @asyncio.coroutine
     def async_standby(self):
-        _LOGGER.debug("Queuing system standby")
+        _LOGGER.debug("Queuing system standby")  # pragma: no cover
         self._loop.call_soon_threadsafe(self.io_standby)
 
     def io_standby(self):
-        _LOGGER.debug("System standby")
+        _LOGGER.debug("System standby")  # pragma: no cover
         self._loop.run_in_executor(self._io_executor,
                                    self._adapter.StandbyDevices)
 
@@ -318,11 +360,11 @@ class HDMINetwork:
 
     @asyncio.coroutine
     def async_power_on(self):
-        _LOGGER.debug("Queuing power on")
+        _LOGGER.debug("Queuing power on")  # pragma: no cover
         self._loop.call_soon_threadsafe(self.io_power_on)
 
     def io_power_on(self):
-        _LOGGER.debug("power on")
+        _LOGGER.debug("power on")  # pragma: no cover
         self._loop.run_in_executor(self._io_executor,
                                    self._adapter.PowerOnDevices)
 
@@ -345,20 +387,23 @@ class HDMINetwork:
 
     @asyncio.coroutine
     def async_watch(self, loop=None):
-        _LOGGER.debug("Start watching...")
+        _LOGGER.debug("Start watching...")  # pragma: no cover
         if loop is None:
             loop = self._loop
         while self._running:
             if self.initialized:
-                _LOGGER.debug("Scanning...")
+                _LOGGER.debug("Scanning...")  # pragma: no cover
                 yield from self.async_scan()
-                _LOGGER.debug("Sleep...")
-                yield from asyncio.sleep(self._scan_interval, loop=loop)
+                _LOGGER.debug("Sleep...")  # pragma: no cover
+                start_time = self._loop.time()
+                while self._loop.time() <= (start_time + self._scan_interval):
+                    yield from asyncio.sleep(.3, loop=loop)
             else:
                 _LOGGER.warning("Not initialized. Waiting for init.")
                 yield from asyncio.sleep(1, loop=loop)
 
     def start(self):
+        _LOGGER.info("HDMI network starting...")  # pragma: no cover
         self._running = True
         self._loop.create_task(self.async_init())
         self._loop.create_task(self.async_watch())
@@ -366,7 +411,7 @@ class HDMINetwork:
             self._loop.run_in_executor(None, self._loop.run_forever)
 
     def command_callback(self, raw_command):
-        _LOGGER.debug("Queuing callback")
+        _LOGGER.debug("Queuing callback")  # pragma: no cover
         self._loop.call_soon_threadsafe(self._async_callback, raw_command)
 
     def _async_callback(self, raw_command):
@@ -386,11 +431,17 @@ class HDMINetwork:
                     self._command_callback, command)
 
     def stop(self):
+        _LOGGER.debug("HDMI network shutdown.")  # pragma: no cover
         self._running = False
         for d in self.devices:
             d.stop()
         if self._managed_loop:
+            _LOGGER.debug("Stopping HDMI loop.")  # pragma: no cover
             self._loop.stop()
+            _LOGGER.debug("Cleanup loop")  # pragma: no cover
+            asyncio.sleep(3, loop=self._loop)
+            self._loop.close()
+        _LOGGER.info("HDMI network stopped.")  # pragma: no cover
 
     def set_command_callback(self, callback):
         self._command_callback = callback
@@ -403,3 +454,28 @@ class HDMINetwork:
 
     def set_initialized_callback(self, callback):
         self._initialized_callback = callback
+
+
+class CecConfig:  # pragma: no cover
+    def __init__(self, name: str = None, monitor_only: bool = False,
+                 activate_source: bool = False,
+                 device_type=TYPE_RECORDER_1):
+        import cec
+        self._command_callback = None
+        self._cecconfig = cec.libcec_configuration()
+        self._cecconfig.bMonitorOnly = 1 if monitor_only else 0
+        self._cecconfig.strDeviceName = name
+        self._cecconfig.bActivateSource = 1 if activate_source else 0
+        self._cecconfig.deviceTypes.Add(device_type)
+
+    @property
+    def cecconfig(self):
+        return self._cecconfig
+
+    def SetCommandCallback(self, callback):
+        self._cecconfig.SetCommandCallback(callback)
+
+
+def _to_digits(x: int) -> List[int]:
+    for x in ("%04x" % x):
+        yield int(x, 16)
