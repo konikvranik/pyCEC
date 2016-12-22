@@ -46,7 +46,7 @@ class CecCommand:
     def att(self) -> List[int]:
         return self._att if self._att else []
 
-    def _att(self, value: List[int]):
+    def _att(self, value: List[int]):  # pragma: no cover
         self._att = value
 
     @property
