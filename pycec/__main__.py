@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 from . import _LOGGER
-from .network import HDMINetwork
+from .network import HDMINetwork, CecConfig
 
 if __name__ == '__main__':
 
@@ -13,18 +13,9 @@ if __name__ == '__main__':
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
     _LOGGER.addHandler(ch)
-    import cec
-
-    """initialize libCEC"""
-    cecconfig = cec.libcec_configuration()
-    cecconfig.strDeviceName = "pyCEC"
-    cecconfig.bActivateSource = 0
-    cecconfig.bMonitorOnly = 0
-    cecconfig.deviceTypes.Add(cec.CEC_DEVICE_TYPE_RECORDING_DEVICE)
-    cecconfig.clientVersion = cec.LIBCEC_VERSION_CURRENT
 
     _LOGGER.info("Starting network...")
-    network = HDMINetwork(cecconfig)
+    network = HDMINetwork(CecConfig("pyCEC"))
 
     network.start()
 

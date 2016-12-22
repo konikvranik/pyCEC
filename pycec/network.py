@@ -1,15 +1,15 @@
 import asyncio
 from concurrent.futures.thread import ThreadPoolExecutor
 from multiprocessing import Queue
+from typing import List
 
 from functools import reduce
 
-from pycec import _LOGGER, CecConfig
+from pycec import _LOGGER
 from pycec.commands import CecCommand
 from pycec.const import CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES, \
-    CMD_ACTIVE_SOURCE, CMD_STREAM_PATH, ADDR_BROADCAST
+    CMD_ACTIVE_SOURCE, CMD_STREAM_PATH, ADDR_BROADCAST, TYPE_RECORDER_1
 from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR
-from pycec.datastruct import PhysicalAddress
 
 DEFAULT_SCAN_INTERVAL = 30
 DEFAULT_UPDATE_PERIOD = 30
@@ -417,3 +417,65 @@ class HDMINetwork:
 
     def set_initialized_callback(self, callback):
         self._initialized_callback = callback
+
+
+class PhysicalAddress:
+    def __init__(self, address):
+        self._physical_address = int()
+        if isinstance(address, (str,)):
+            address = int(address.replace('.', '').replace(':', ''), 16)
+        if isinstance(address, (tuple, list,)):
+            if len(address) == 2:
+                self._physical_address = int("%02x%02x" % tuple(address), 16)
+            elif len(address) == 4:
+                self._physical_address = int("%x%x%x%x" % tuple(address), 16)
+            else:
+                raise AttributeError("Incorrect count of members in list!")
+        elif isinstance(address, (int,)):
+            self._physical_address = address
+
+    @property
+    def asattr(self) -> List[int]:
+        return [self._physical_address // 0x100,
+                self._physical_address % 0x100]
+
+    @property
+    def asint(self) -> int:
+        return self._physical_address
+
+    @property
+    def ascmd(self) -> str:
+        return "%x%x:%x%x" % tuple(
+            x for x in _to_digits(self._physical_address))
+
+    @property
+    def asstr(self) -> str:
+        return ".".join(("%x" % x) for x in _to_digits(self._physical_address))
+
+    def __str__(self):
+        return self.asstr
+
+
+class CecConfig:
+    def __init__(self, name: str = None, monitor_only: bool = False,
+                 activate_source: bool = False,
+                 device_type=TYPE_RECORDER_1):
+        import cec
+        self._command_callback = None
+        self._cecconfig = cec.libcec_configuration()
+        self._cecconfig.bMonitorOnly = 1 if monitor_only else 0
+        self._cecconfig.strDeviceName = name
+        self._cecconfig.bActivateSource = 1 if activate_source else 0
+        self._cecconfig.deviceTypes.Add(device_type)
+
+    @property
+    def cecconfig(self):
+        return self._cecconfig
+
+    def SetCommandCallback(self, callback):
+        self._cecconfig.SetCommandCallback(callback)
+
+
+def _to_digits(x: int) -> List[int]:
+    for x in ("%04x" % x):
+        yield int(x, 16)
