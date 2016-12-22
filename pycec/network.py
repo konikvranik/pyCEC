@@ -140,8 +140,10 @@ class HDMIDevice:
                 yield from self.async_request_update(CMD_VENDOR[0])
             if not self._stop:
                 yield from self.async_request_update(CMD_PHYSICAL_ADDRESS[0])
-            if not self._stop:
-                yield from asyncio.sleep(self._update_period, loop=self._loop)
+            start_time = self._loop.time()
+            while not self._stop and self._loop.time() <= (
+                        start_time + self._update_period):
+                yield from asyncio.sleep(.3, loop=self._loop)
 
     def stop(self):  # pragma: no cover
         self._stop = True
@@ -353,7 +355,9 @@ class HDMINetwork:
                 _LOGGER.debug("Scanning...")
                 yield from self.async_scan()
                 _LOGGER.debug("Sleep...")
-                yield from asyncio.sleep(self._scan_interval, loop=loop)
+                start_time = self._loop.time()
+                while self._loop.time() <= (start_time + self._scan_interval):
+                    yield from asyncio.sleep(.3, loop=loop)
             else:
                 _LOGGER.warning("Not initialized. Waiting for init.")
                 yield from asyncio.sleep(1, loop=loop)
