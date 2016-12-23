@@ -36,9 +36,6 @@ def main():
                          t.get_extra_info('peername'))
             t.write(str.encode("%s\n" % command.raw))
 
-
-            #    network.set_initialized_callback(_start_server)
-
     network.set_command_callback(_send_command_to_tcp)
     loop.run_until_complete(network.async_init())
 
