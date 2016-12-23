@@ -13,6 +13,7 @@ def main():
 
     class CECServerProtocol(asyncio.Protocol):
         transport = None
+        buffer = ''
 
         def connection_made(self, transport):
             _LOGGER.info("Connection opened by %s",
@@ -23,10 +24,16 @@ def main():
         def data_received(self, data):
             _LOGGER.info("Received %s from %s", data,
                          self.transport.get_extra_info('peername'))
-            network.send_command(CecCommand(bytes.decode(data).rstrip()))
+            self.buffer += bytes.decode(data)
+            for line in self.buffer.splitlines(keepends=True):
+                if line.endswith('\n'):
+                    network.send_command(CecCommand(line.rstrip()))
+                    self.buffer = ''
+                else:
+                    self.buffer = line
 
         def connection_lost(self, exc):
-            _LOGGER.warn("Connection with %s lost",
+            _LOGGER.info("Connection with %s lost",
                          self.transport.get_extra_info('peername'))
             transports.remove(self.transport)
 
@@ -57,9 +64,9 @@ def main():
 
 
 def init_logger():
-    _LOGGER.setLevel(logging.DEBUG)
+    _LOGGER.setLevel(logging.INFO)
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(logging.INFO)
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
