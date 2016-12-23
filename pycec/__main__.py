@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from poplib import LF
 
 from pycec.commands import CecCommand
 from . import _LOGGER
@@ -34,7 +33,7 @@ def main():
                     self.buffer = line
 
         def connection_lost(self, exc):
-            _LOGGER.warn("Connection with %s lost",
+            _LOGGER.info("Connection with %s lost",
                          self.transport.get_extra_info('peername'))
             transports.remove(self.transport)
 
@@ -65,9 +64,9 @@ def main():
 
 
 def init_logger():
-    _LOGGER.setLevel(logging.DEBUG)
+    _LOGGER.setLevel(logging.INFO)
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(logging.INFO)
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
