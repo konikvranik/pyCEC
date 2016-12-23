@@ -281,6 +281,9 @@ class HDMINetwork:
     def initialized(self):
         return self._adapter is not None
 
+    def init(self):
+        self._loop.create_task(self.async_init())
+
     @asyncio.coroutine
     def async_init(self):
         _LOGGER.debug("initializing")  # pragma: no cover
