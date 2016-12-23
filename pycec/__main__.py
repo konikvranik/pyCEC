@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from poplib import LF
 
 from pycec.commands import CecCommand
 from . import _LOGGER
@@ -13,7 +14,7 @@ def main():
 
     class CECServerProtocol(asyncio.Protocol):
         transport = None
-        buffer = ""
+        buffer = ''
 
         def connection_made(self, transport):
             _LOGGER.info("Connection opened by %s",
@@ -25,9 +26,12 @@ def main():
             _LOGGER.info("Received %s from %s", data,
                          self.transport.get_extra_info('peername'))
             self.buffer += bytes.decode(data)
-            if self.buffer.endswith('\n'):
-                network.send_command(CecCommand(self.buffer.rstrip()))
-                self.buffer = ""
+            for line in self.buffer.splitlines(keepends=True):
+                if line.endswith('\n'):
+                    network.send_command(CecCommand(line.rstrip()))
+                    self.buffer = ''
+                else:
+                    self.buffer = line
 
         def connection_lost(self, exc):
             _LOGGER.warn("Connection with %s lost",
