@@ -13,7 +13,7 @@ class CecAdapter(AbstractCecAdapter):
                  device_type=ADDR_RECORDINGDEVICE1,
                  loop=None):
         super().__init__()
-        self._managed_loop = (loop == None)
+        self._managed_loop = (loop is None)
         if self._managed_loop:
             self._loop = asyncio.get_event_loop()
         else:

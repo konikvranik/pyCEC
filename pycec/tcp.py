@@ -6,24 +6,6 @@ from pycec.network import AbstractCecAdapter
 DEFAULT_PORT = 9526
 
 
-class TcpProtocol(asyncio.Protocol):
-    def __init__(self, adapter: TcpAdapter):
-        self._adapter = adapter
-
-    def connection_made(self, transport):
-        self.transport = transport
-        self._adapter.set_transport = transport
-
-    def data_received(self, data: bytes):
-        self._adapter._command_callback(CecCommand(data.decode().rstrip()))
-
-    def eof_received(self):
-        self._adapter.shutdown()
-
-    def connection_lost(self, exc):
-        self._adapter.shutdown()
-
-
 class TcpAdapter(AbstractCecAdapter):
     def __init__(self, host, port=DEFAULT_PORT, loop=asyncio.new_event_loop()):
         super().__init__()
@@ -64,3 +46,21 @@ class TcpAdapter(AbstractCecAdapter):
 
     def set_transport(self, transport):
         self._transport = transport
+
+
+class TcpProtocol(asyncio.Protocol):
+    def __init__(self, adapter: TcpAdapter):
+        self._adapter = adapter
+
+    def connection_made(self, transport):
+        self.transport = transport
+        self._adapter.set_transport = transport
+
+    def data_received(self, data: bytes):
+        self._adapter._command_callback(CecCommand(data.decode().rstrip()))
+
+    def eof_received(self):
+        self._adapter.shutdown()
+
+    def connection_lost(self, exc):
+        self._adapter.shutdown()
