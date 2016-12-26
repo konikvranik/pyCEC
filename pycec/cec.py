@@ -1,4 +1,3 @@
-import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
 from pycec import _LOGGER
@@ -11,14 +10,8 @@ from pycec.network import AbstractCecAdapter
 class CecAdapter(AbstractCecAdapter):
     def __init__(self, name: str = None, monitor_only: bool = None,
                  activate_source: bool = None,
-                 device_type=ADDR_RECORDINGDEVICE1,
-                 loop=None):
+                 device_type=ADDR_RECORDINGDEVICE1):
         super().__init__()
-        self._managed_loop = (loop is None)
-        if self._managed_loop:
-            self._loop = asyncio.new_event_loop()
-        else:
-            self._loop = loop
         self._adapter = None
         self._io_executor = ThreadPoolExecutor(1)
         import cec

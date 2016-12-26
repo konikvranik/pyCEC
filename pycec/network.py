@@ -62,6 +62,7 @@ class PhysicalAddress:
 class AbstractCecAdapter:
     def __init__(self):
         self._initialized = False
+        self._loop = None
 
     def init(self, callback: callable = None):
         raise NotImplementedError
@@ -90,6 +91,9 @@ class AbstractCecAdapter:
     @property
     def initialized(self):
         return self._initialized
+
+    def set_event_loop(self, loop):
+        self._loop = loop
 
 
 class HDMIDevice:
@@ -286,6 +290,7 @@ class HDMINetwork:
             _LOGGER.warn("Be aware! Network is using shared event loop!")
             self._loop = loop
         self._adapter = adapter
+        self._adapter.set_event_loop(self._loop)
         self._scan_delay = DEFAULT_SCAN_DELAY
         self._scan_interval = scan_interval
         self._command_queue = Queue()
