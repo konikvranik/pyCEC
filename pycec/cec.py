@@ -16,7 +16,7 @@ class CecAdapter(AbstractCecAdapter):
         super().__init__()
         self._managed_loop = (loop is None)
         if self._managed_loop:
-            self._loop = asyncio.get_event_loop()
+            self._loop = asyncio.new_event_loop()
         else:
             self._loop = loop
         self._adapter = None
