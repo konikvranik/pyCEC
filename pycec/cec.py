@@ -7,6 +7,7 @@ from pycec.const import VENDORS, ADDR_RECORDINGDEVICE1
 from pycec.network import AbstractCecAdapter
 
 
+# pragma: no cover
 class CecAdapter(AbstractCecAdapter):
     def __init__(self, name: str = None, monitor_only: bool = None,
                  activate_source: bool = None,
