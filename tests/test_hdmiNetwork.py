@@ -4,18 +4,19 @@ from unittest import TestCase
 from pycec.commands import CecCommand
 from pycec.const import CMD_POWER_STATUS, CMD_OSD_NAME, CMD_VENDOR, \
     CMD_PHYSICAL_ADDRESS
-from pycec.network import HDMINetwork, HDMIDevice
+from pycec.network import HDMINetwork, HDMIDevice, AbstractCecAdapter
 
 
 class TestHDMINetwork(TestCase):
     def test_devices(self):
         loop = asyncio.get_event_loop()
-        network = HDMINetwork(MockConfig(), adapter=MockAdapter(
+        network = HDMINetwork(MockAdapter(
             [True, True, False, True, False, True, False, False, False, False,
              False, False, False, False, False,
              False]), scan_interval=0, loop=loop)
         network._scan_delay = 0
-        network._adapter._config.SetCommandCallback(network.command_callback)
+        network._adapter.SetCommandCallback(network.command_callback)
+        network.init()
         network.scan()
         loop.run_until_complete(asyncio.sleep(.1, loop))
         loop.stop()
@@ -32,12 +33,13 @@ class TestHDMINetwork(TestCase):
 
     def test_scan(self):
         loop = asyncio.get_event_loop()
-        network = HDMINetwork(MockConfig(), adapter=MockAdapter(
+        network = HDMINetwork(MockAdapter(
             [True, True, False, True, False, True, False, False, False, False,
              False, False, False, False, False, False]), scan_interval=0,
-                              loop=loop)
+            loop=loop)
         network._scan_delay = 0
-        network._adapter._config.SetCommandCallback(network.command_callback)
+        network._adapter.SetCommandCallback(network.command_callback)
+        network.init()
         network.scan()
         loop.run_until_complete(asyncio.sleep(.1, loop))
         loop.stop()
@@ -66,29 +68,36 @@ class TestHDMINetwork(TestCase):
         loop.run_forever()
 
 
-class MockConfig:
-    def __init__(self):
-        self._command_callback = None
-
-    def SetCommandCallback(self, callback):
-        self._command_callback = callback
-
-    def GetCommandCallback(self):
-        return self._command_callback
-
-
 class LogicalAddress:
     def __init__(self, i):
         self.primary = i
 
 
-class MockAdapter:
+class MockAdapter(AbstractCecAdapter):
+    def shutdown(self):
+        pass
+
+    def init(self, callback: callable = None):
+        self._initialized = True
+
+    def PowerOnDevices(self):
+        pass
+
+    def StandbyDevices(self):
+        pass
+
+    def SetCommandCallback(self, callback):
+        self._command_callback = callback
+
     def __init__(self, data):
         self._data = data
-        self._config = MockConfig()
+        self._command_callback = None
+        super().__init__()
 
     def PollDevice(self, i):
-        return self._data[i]
+        f = asyncio.Future()
+        f.set_result(self._data[i])
+        return f
 
     def Transmit(self, command):
         cmd = None
@@ -106,16 +115,7 @@ class MockAdapter:
             cmd = CMD_PHYSICAL_ADDRESS[1]
             att = [0x09, 0xB0, 0x02]
         response = CecCommand(cmd, src=command.dst, dst=command.src, att=att)
-        self._config.GetCommandCallback()(">> " + response.raw)
-
-    def CommandFromString(self, cmd: str) -> CecCommand:
-        return CecCommand(cmd)
+        self._command_callback(">> " + response.raw)
 
     def GetLogicalAddresses(self):
         return LogicalAddress(2)
-
-    def GetCurrentConfiguration(self):
-        return self._config
-
-    def SetConfiguration(self, config):
-        self._config = config

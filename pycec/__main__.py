@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from pycec.cec import CecAdapter
 from pycec.commands import CecCommand
 from . import _LOGGER
 from .network import HDMINetwork, CecConfig
@@ -9,7 +10,7 @@ from .network import HDMINetwork, CecConfig
 def main():
     transports = set()
     loop = asyncio.get_event_loop()
-    network = HDMINetwork(CecConfig("pyCEC"), loop=loop)
+    network = HDMINetwork(CecAdapter("pyCEC", loop=loop), loop=loop)
 
     class CECServerProtocol(asyncio.Protocol):
         transport = None
@@ -63,17 +64,14 @@ def main():
     loop.close()
 
 
-def init_logger():
-    _LOGGER.setLevel(logging.INFO)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    _LOGGER.addHandler(ch)
-
-
-init_logger()
+# Configure logging
+_LOGGER.setLevel(logging.INFO)
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+_LOGGER.addHandler(ch)
 
 if __name__ == '__main__':
     main()
