@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from pycec.cec import CecAdapter
 from pycec.commands import CecCommand
 from . import _LOGGER
 from .network import HDMINetwork, CecConfig
@@ -9,7 +10,7 @@ from .network import HDMINetwork, CecConfig
 def main():
     transports = set()
     loop = asyncio.get_event_loop()
-    network = HDMINetwork(CecConfig("pyCEC"), loop=loop)
+    network = HDMINetwork(CecAdapter("pyCEC", loop=loop), loop=loop)
 
     class CECServerProtocol(asyncio.Protocol):
         transport = None
