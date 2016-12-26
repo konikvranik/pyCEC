@@ -7,7 +7,7 @@ from typing import List
 from pycec import _LOGGER
 from pycec.commands import CecCommand
 from pycec.const import CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES, \
-    CMD_ACTIVE_SOURCE, CMD_STREAM_PATH, ADDR_BROADCAST, TYPE_RECORDER_1
+    CMD_ACTIVE_SOURCE, CMD_STREAM_PATH, ADDR_BROADCAST, ADDR_RECORDINGDEVICE1
 from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR
 
 DEFAULT_SCAN_INTERVAL = 30
@@ -460,15 +460,17 @@ class HDMINetwork:
 
 
 class CecConfig:  # pragma: no cover
-    def __init__(self, name: str = None, monitor_only: bool = False,
-                 activate_source: bool = False,
-                 device_type=TYPE_RECORDER_1):
+    def __init__(self, name: str = None, monitor_only: bool = None,
+                 activate_source: bool = None,
+                 device_type=ADDR_RECORDINGDEVICE1):
         import cec
         self._command_callback = None
         self._cecconfig = cec.libcec_configuration()
-        self._cecconfig.bMonitorOnly = 1 if monitor_only else 0
+        if monitor_only is not None:
+            self._cecconfig.bMonitorOnly = 1 if monitor_only else 0
         self._cecconfig.strDeviceName = name
-        self._cecconfig.bActivateSource = 1 if activate_source else 0
+        if activate_source is not None:
+            self._cecconfig.bActivateSource = 1 if activate_source else 0
         self._cecconfig.deviceTypes.Add(device_type)
 
     @property
