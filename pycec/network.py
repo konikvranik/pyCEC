@@ -7,7 +7,8 @@ from typing import List
 from pycec import _LOGGER
 from pycec.commands import CecCommand
 from pycec.const import CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES, \
-    CMD_ACTIVE_SOURCE, CMD_STREAM_PATH, ADDR_BROADCAST, ADDR_RECORDINGDEVICE1
+    CMD_ACTIVE_SOURCE, CMD_STREAM_PATH, ADDR_BROADCAST, ADDR_RECORDINGDEVICE1, \
+    CMD_DECK_STATUS
 from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR
 
 DEFAULT_SCAN_INTERVAL = 30
@@ -79,6 +80,7 @@ class HDMIDevice:
         self._update_period = update_period
         self._type = int()
         self._update_callback = None
+        self._status = None
 
     @property
     def logical_address(self) -> int:
@@ -91,6 +93,10 @@ class HDMIDevice:
     @property
     def power_status(self) -> int:
         return self._power_status
+
+    @property
+    def status(self) -> int:
+        return self._status
 
     @property
     def vendor_id(self) -> int:
@@ -152,6 +158,10 @@ class HDMIDevice:
             self._power_status = command.att[0]
             self._updates[CMD_POWER_STATUS[0]] = True
             result = True
+        elif command.cmd == CMD_DECK_STATUS[1]:
+            self._status = command.att[0]
+            self._updates[CMD_DECK_STATUS[0]] = True
+            result = True
         elif command.cmd == CMD_VENDOR[1]:
             self._vendor_id = reduce(lambda x, y: x * 0x100 + y, command.att)
             self._updates[CMD_VENDOR[0]] = True
@@ -177,6 +187,8 @@ class HDMIDevice:
                 yield from self.async_request_update(CMD_VENDOR[0])
             if not self._stop:
                 yield from self.async_request_update(CMD_PHYSICAL_ADDRESS[0])
+            if not self._stop:
+                yield from self.async_request_update(CMD_DECK_STATUS[0])
             start_time = self._loop.time()
             while not self._stop and self._loop.time() <= (
                         start_time + self._update_period):
