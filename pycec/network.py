@@ -1,9 +1,8 @@
 import asyncio
 from concurrent.futures.thread import ThreadPoolExecutor
+from functools import reduce
 from multiprocessing import Queue
 from typing import List
-
-from functools import reduce
 
 from pycec import _LOGGER
 from pycec.commands import CecCommand
@@ -192,11 +191,12 @@ class HDMIDevice:
     def async_request_update(self, cmd: int):
         _LOGGER.debug("Requesting device update...")
         self._updates[cmd] = False
-        command = CecCommand(cmd, self.logical_address)
+        command = CecCommand(cmd)
         yield from self.async_send_command(command)
 
     @asyncio.coroutine
     def async_send_command(self, command):
+        command.dst = self._logical_address
         _LOGGER.debug("Device sending command %s", command)
         yield from self._network.async_send_command(command)
 
