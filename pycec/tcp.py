@@ -14,7 +14,7 @@ class TcpProtocol(asyncio.Protocol):
         self.transport = transport
         self._adapter.set_transport = transport
 
-    def data_received(self, data:bytes):
+    def data_received(self, data: bytes):
         self._adapter._command_callback(CecCommand(data.decode().rstrip()))
 
     def eof_received(self):

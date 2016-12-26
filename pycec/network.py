@@ -1,5 +1,5 @@
 import asyncio
-from concurrent.futures.thread import ThreadPoolExecutor
+import functools
 from functools import reduce
 from multiprocessing import Queue
 from typing import List
@@ -7,8 +7,8 @@ from typing import List
 from pycec import _LOGGER
 from pycec.commands import CecCommand
 from pycec.const import CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES, \
-    CMD_ACTIVE_SOURCE, CMD_STREAM_PATH, ADDR_BROADCAST, ADDR_RECORDINGDEVICE1, \
-    CMD_DECK_STATUS, CMD_AUDIO_STATUS
+    CMD_ACTIVE_SOURCE, CMD_STREAM_PATH, ADDR_BROADCAST, CMD_DECK_STATUS, \
+    CMD_AUDIO_STATUS
 from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR
 
 DEFAULT_SCAN_INTERVAL = 30
@@ -57,6 +57,39 @@ class PhysicalAddress:
 
     def __str__(self):
         return self.asstr
+
+
+class AbstractCecAdapter:
+    def __init__(self):
+        self._initialized = False
+
+    def init(self, callback: callable = None):
+        raise NotImplementedError
+
+    def PollDevice(self, device):
+        raise NotImplementedError
+
+    def GetLogicalAddresses(self):
+        raise NotImplementedError
+
+    def Transmit(self, command: CecCommand):
+        raise NotImplementedError
+
+    def StandbyDevices(self):
+        raise NotImplementedError
+
+    def PowerOnDevices(self):
+        raise NotImplementedError
+
+    def SetCommandCallback(self, callback):
+        raise NotImplementedError
+
+    def shutdown(self):
+        raise NotImplementedError
+
+    @property
+    def initialized(self):
+        return self._initialized
 
 
 class HDMIDevice:
@@ -239,61 +272,29 @@ class HDMIDevice:
 
 
 class HDMINetwork:
-    def __init__(self, config, scan_interval=DEFAULT_SCAN_INTERVAL, loop=None,
-                 adapter=None):
+    def __init__(self, adapter: AbstractCecAdapter,
+                 scan_interval=DEFAULT_SCAN_INTERVAL, loop=None):
         self._running = False
+        self._device_status = dict()
         self._managed_loop = loop is None
         if self._managed_loop:
             self._loop = asyncio.new_event_loop()
         else:
             _LOGGER.warn("Be aware! Network is using shared event loop!")
             self._loop = loop
-        self._config = config
         self._adapter = adapter
         self._scan_delay = DEFAULT_SCAN_DELAY
         self._scan_interval = scan_interval
         self._command_queue = Queue()
-        self._device_status = dict()
         self._devices = dict()
-        self._io_executor = ThreadPoolExecutor(1)
         self._command_callback = None
         self._device_added_callback = None
         self._initialized_callback = None
         self._device_removed_callback = None
 
-    def _init_cec(self):  # pragma: no cover
-        import cec
-        if isinstance(self._config, (CecConfig,)):
-            self._config = self._config.cecconfig
-        if not self._config.clientVersion:
-            self._config.clientVersion = cec.LIBCEC_VERSION_CURRENT
-        _LOGGER.debug("Initing CEC...")
-        adapter = cec.ICECAdapter.Create(self._config)
-        _LOGGER.debug("Created adapter")
-        a = None
-        adapters = adapter.DetectAdapters()
-        for a in adapters:
-            _LOGGER.info("found a CEC adapter:")
-            _LOGGER.info("port:     " + a.strComName)
-            _LOGGER.info("vendor:   " + (
-                VENDORS[a.iVendorId] if a.iVendorId in VENDORS else hex(
-                    a.iVendorId)))
-            _LOGGER.info("product:  " + hex(a.iProductId))
-            a = a.strComName
-        if a is None:
-            _LOGGER.warning("No adapters found")
-        else:
-            if adapter.Open(a):
-                _LOGGER.info("connection opened")
-                self._adapter = adapter
-            else:
-                _LOGGER.error("failed to open a connection to the CEC adapter")
-        if self._initialized_callback:
-            self._initialized_callback(self)
-
     @property
     def initialized(self):
-        return self._adapter is not None
+        return self._adapter.initialized
 
     def init(self):
         self._loop.create_task(self.async_init())
@@ -301,18 +302,34 @@ class HDMINetwork:
     @asyncio.coroutine
     def async_init(self):
         _LOGGER.debug("initializing")  # pragma: no cover
-        config = self._config
         _LOGGER.debug("setting callback")  # pragma: no cover
-        config.SetCommandCallback(self.command_callback)
+        self._adapter.SetCommandCallback(self.command_callback)
         _LOGGER.debug("Callback set")  # pragma: no cover
-        task = self._loop.run_in_executor(self._io_executor, self._init_cec)
+        task = self._adapter.init(self._initialized_callback)
+        self._running = True
         while not (task.done() or task.cancelled()) and self._running:
-            _LOGGER.debug("Init pending")  # pragma: no cover
+            _LOGGER.debug("Init pending - %s", task)  # pragma: no cover
             yield from asyncio.sleep(1, loop=self._loop)
         _LOGGER.debug("Init done")  # pragma: no cover
 
     def scan(self):
         self._loop.create_task(self.async_scan())
+
+    def _after_polled(self, device, task):
+        self._device_status[device] = task.result()
+        if self._device_status[device] and device not in self._devices:
+            self._devices[device] = HDMIDevice(device, self, loop=self._loop)
+            if self._device_added_callback:
+                self._loop.call_soon_threadsafe(self._device_added_callback,
+                                                self._devices[device])
+            self._loop.create_task(self._devices[device].async_run())
+            _LOGGER.debug("Found device %d", device)
+        elif not self._device_status[device] and device in self._devices:
+            self.get_device(device).stop()
+            if self._device_removed_callback:
+                self._loop.call_soon_threadsafe(self._device_removed_callback,
+                                                self._devices[device])
+            del (self._devices[device])
 
     @asyncio.coroutine
     def async_scan(self):
@@ -321,25 +338,9 @@ class HDMINetwork:
             _LOGGER.error("Device not initialized!!!")  # pragma: no cover
             return
         for d in range(15):
-            self._loop.run_in_executor(
-                self._io_executor, self._io_poll_device, d)
+            task = self._adapter.PollDevice(d)
+            task.add_done_callback(functools.partial(self._after_polled, d))
             yield
-
-    def _io_poll_device(self, d):
-        self._device_status[d] = self._adapter.PollDevice(d)
-        if self._device_status[d] and d not in self._devices:
-            self._devices[d] = HDMIDevice(d, self, loop=self._loop)
-            if self._device_added_callback:
-                self._loop.call_soon_threadsafe(self._device_added_callback,
-                                                self._devices[d])
-            self._loop.create_task(self._devices[d].async_run())
-            _LOGGER.debug("Found device %d", d)
-        elif not self._device_status[d] and d in self._devices:
-            self.get_device(d).stop()
-            if self._device_removed_callback:
-                self._loop.call_soon_threadsafe(self._device_removed_callback,
-                                                self._devices[d])
-            del (self._devices[d])
 
     def send_command(self, command):
         self._loop.create_task(self.async_send_command(command))
@@ -348,29 +349,18 @@ class HDMINetwork:
     def async_send_command(self, command):
         if isinstance(command, str):
             command = CecCommand(command)
-        self._loop.call_soon_threadsafe(self.io_send_command, command)
-
-    def io_send_command(self, command: CecCommand):
-        if command.src is None or command.src == 0xf:
-            _LOGGER.debug("Source address changed from %s to %s", command.src,
-                          self._adapter.GetLogicalAddresses().primary)
-            command.src = self._adapter.GetLogicalAddresses().primary
         _LOGGER.debug("<< %s", command)
-        self._loop.run_in_executor(
-            self._io_executor, self._adapter.Transmit,
-            self._adapter.CommandFromString(command.raw))
+        if command.src is None or command.src == 0xf:
+            command.src = self._adapter.GetLogicalAddresses().primary
+        self._loop.call_soon_threadsafe(self._adapter.Transmit, command)
 
     def standby(self):
         self._loop.create_task(self.async_standby())
 
     @asyncio.coroutine
     def async_standby(self):
-        self._loop.call_soon_threadsafe(self.io_standby)
-
-    def io_standby(self):
-        _LOGGER.debug("System standby")  # pragma: no cover
-        self._loop.run_in_executor(self._io_executor,
-                                   self._adapter.StandbyDevices)
+        _LOGGER.debug("Queuing system standby")  # pragma: no cover
+        self._loop.call_soon_threadsafe(self._adapter.StandbyDevices)
 
     def power_on(self):
         self._loop.create_task(self.async_power_on())
@@ -378,12 +368,7 @@ class HDMINetwork:
     @asyncio.coroutine
     def async_power_on(self):
         _LOGGER.debug("Queuing power on")  # pragma: no cover
-        self._loop.call_soon_threadsafe(self.io_power_on)
-
-    def io_power_on(self):
-        _LOGGER.debug("power on")  # pragma: no cover
-        self._loop.run_in_executor(self._io_executor,
-                                   self._adapter.PowerOnDevices)
+        self._loop.call_soon_threadsafe(self._adapter.PowerOnDevices)
 
     def active_source(self, source: PhysicalAddress):
         self._loop.create_task(self.async_active_source(source))
@@ -452,7 +437,7 @@ class HDMINetwork:
         self._running = False
         for d in self.devices:
             d.stop()
-        self._adapter.Close()
+        self._adapter.shutdown()
         if self._managed_loop:
             _LOGGER.debug("Stopping HDMI loop.")  # pragma: no cover
             self._loop.stop()
@@ -472,28 +457,6 @@ class HDMINetwork:
 
     def set_initialized_callback(self, callback):
         self._initialized_callback = callback
-
-
-class CecConfig:  # pragma: no cover
-    def __init__(self, name: str = None, monitor_only: bool = None,
-                 activate_source: bool = None,
-                 device_type=ADDR_RECORDINGDEVICE1):
-        import cec
-        self._command_callback = None
-        self._cecconfig = cec.libcec_configuration()
-        if monitor_only is not None:
-            self._cecconfig.bMonitorOnly = 1 if monitor_only else 0
-        self._cecconfig.strDeviceName = name
-        if activate_source is not None:
-            self._cecconfig.bActivateSource = 1 if activate_source else 0
-        self._cecconfig.deviceTypes.Add(device_type)
-
-    @property
-    def cecconfig(self):
-        return self._cecconfig
-
-    def SetCommandCallback(self, callback):
-        self._cecconfig.SetCommandCallback(callback)
 
 
 def _to_digits(x: int) -> List[int]:

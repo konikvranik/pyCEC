@@ -11,9 +11,13 @@ class CecAdapter(AbstractCecAdapter):
     def __init__(self, name: str = None, monitor_only: bool = None,
                  activate_source: bool = None,
                  device_type=ADDR_RECORDINGDEVICE1,
-                 loop=asyncio.new_event_loop()):
+                 loop=None):
         super().__init__()
-        self._loop = loop
+        self._managed_loop = (loop == None)
+        if self._managed_loop:
+            self._loop = asyncio.get_event_loop()
+        else:
+            self._loop = loop
         self._adapter = None
         self._io_executor = ThreadPoolExecutor(1)
         import cec
@@ -26,7 +30,7 @@ class CecAdapter(AbstractCecAdapter):
         self._cecconfig.deviceTypes.Add(device_type)
 
     def SetCommandCallback(self, callback):
-        pass
+        self._cecconfig.SetCommandCallback(callback)
 
     def StandbyDevices(self):
         self._loop.run_in_executor(self._io_executor,
@@ -37,10 +41,10 @@ class CecAdapter(AbstractCecAdapter):
             self._io_executor, self._adapter.PollDevice, device)
 
     def shutdown(self):
-        pass
+        self._adapter.Close()
 
     def GetLogicalAddresses(self):
-        pass
+        return self._adapter.GetLogicalAddresses()
 
     def PowerOnDevices(self):
         self._loop.run_in_executor(self._io_executor,
