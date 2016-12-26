@@ -8,12 +8,18 @@ from pycec import _LOGGER
 from pycec.commands import CecCommand
 from pycec.const import CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES, \
     CMD_ACTIVE_SOURCE, CMD_STREAM_PATH, ADDR_BROADCAST, ADDR_RECORDINGDEVICE1, \
-    CMD_DECK_STATUS
+    CMD_DECK_STATUS, CMD_AUDIO_STATUS
 from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR
 
 DEFAULT_SCAN_INTERVAL = 30
 DEFAULT_UPDATE_PERIOD = 30
 DEFAULT_SCAN_DELAY = 1
+
+UPDATEABLE = {CMD_POWER_STATUS: "_update_power_status",
+              CMD_OSD_NAME: "_update_osd_name", CMD_VENDOR: "_update_vendor",
+              CMD_PHYSICAL_ADDRESS: "_update_physical_address",
+              CMD_DECK_STATUS: "_update_playing_status",
+              CMD_AUDIO_STATUS: "_update_audio_status"}
 
 
 class PhysicalAddress:
@@ -147,48 +153,44 @@ class HDMIDevice:
             DEVICE_TYPE_NAMES[2])
 
     def update_callback(self, command: CecCommand):
-        _LOGGER.debug("Updating device  ")
         result = False
-        if command.cmd == CMD_PHYSICAL_ADDRESS[1]:
-            self._physical_address = PhysicalAddress(command.att[0:2])
-            self._type = command.att[2]
-            self._updates[CMD_PHYSICAL_ADDRESS[0]] = True
-            result = True
-        elif command.cmd == CMD_POWER_STATUS[1]:
-            self._power_status = command.att[0]
-            self._updates[CMD_POWER_STATUS[0]] = True
-            result = True
-        elif command.cmd == CMD_DECK_STATUS[1]:
-            self._status = command.att[0]
-            self._updates[CMD_DECK_STATUS[0]] = True
-            result = True
-        elif command.cmd == CMD_VENDOR[1]:
-            self._vendor_id = reduce(lambda x, y: x * 0x100 + y, command.att)
-            self._updates[CMD_VENDOR[0]] = True
-            result = True
-        elif command.cmd == CMD_OSD_NAME[1]:
-            self._osd_name = reduce(lambda x, y: x + chr(y), command.att, "")
-            self._updates[CMD_OSD_NAME[0]] = True
+        for prop in filter(lambda x: x[1] == command.cmd, UPDATEABLE):
+            getattr(self, UPDATEABLE[prop])(command)
+            self._updates[prop[0]] = True
             result = True
         if result:  # pragma: no cover
             if self._update_callback:
                 self._loop.call_soon_threadsafe(self._update_callback, self)
         return result
 
+    def _update_osd_name(self, command):
+        self._osd_name = reduce(lambda x, y: x + chr(y), command.att, "")
+
+    def _update_vendor(self, command):
+        self._vendor_id = reduce(lambda x, y: x * 0x100 + y, command.att)
+
+    def _update_playing_status(self, command):
+        self._status = command.att[0]
+
+    def _update_power_status(self, command):
+        self._power_status = command.att[0]
+
+    def _update_physical_address(self, command):
+        self._physical_address = PhysicalAddress(command.att[0:2])
+        self._type = command.att[2]
+
+    def _update_audio_status(self, command):
+        self._mute_status = bool(command.att[0] & 0x80)
+        self._mute_value = command.att[0] & 0x7f
+        pass
+
     @asyncio.coroutine
     def async_run(self):
         _LOGGER.debug("Starting device %d", self.logical_address)
         while not self._stop:
-            if not self._stop:
-                yield from self.async_request_update(CMD_POWER_STATUS[0])
-            if not self._stop:
-                yield from self.async_request_update(CMD_OSD_NAME[0])
-            if not self._stop:
-                yield from self.async_request_update(CMD_VENDOR[0])
-            if not self._stop:
-                yield from self.async_request_update(CMD_PHYSICAL_ADDRESS[0])
-            if not self._stop:
-                yield from self.async_request_update(CMD_DECK_STATUS[0])
+            for prop in UPDATEABLE:
+                if not self._stop:
+                    yield from self.async_request_update(prop[0])
             start_time = self._loop.time()
             while not self._stop and self._loop.time() <= (
                         start_time + self._update_period):
@@ -201,15 +203,15 @@ class HDMIDevice:
 
     @asyncio.coroutine
     def async_request_update(self, cmd: int):
-        _LOGGER.debug("Requesting device update...")
         self._updates[cmd] = False
         command = CecCommand(cmd)
         yield from self.async_send_command(command)
 
     @asyncio.coroutine
-    def async_send_command(self, command):
+    def async_send_command(self, command: CecCommand):
         command.dst = self._logical_address
-        _LOGGER.debug("Device sending command %s", command)
+        _LOGGER.debug("Entity %d sending command %s", self.logical_address,
+                      command)
         yield from self._network.async_send_command(command)
 
     def active_source(self):
@@ -346,13 +348,14 @@ class HDMINetwork:
     def async_send_command(self, command):
         if isinstance(command, str):
             command = CecCommand(command)
-        _LOGGER.debug("Queuing command %s", command)
         self._loop.call_soon_threadsafe(self.io_send_command, command)
 
     def io_send_command(self, command: CecCommand):
-        _LOGGER.debug("Sending command %s", command)
         if command.src is None or command.src == 0xf:
+            _LOGGER.debug("Source address changed from %s to %s", command.src,
+                          self._adapter.GetLogicalAddresses().primary)
             command.src = self._adapter.GetLogicalAddresses().primary
+        _LOGGER.debug("<< %s", command)
         self._loop.run_in_executor(
             self._io_executor, self._adapter.Transmit,
             self._adapter.CommandFromString(command.raw))
@@ -362,7 +365,6 @@ class HDMINetwork:
 
     @asyncio.coroutine
     def async_standby(self):
-        _LOGGER.debug("Queuing system standby")  # pragma: no cover
         self._loop.call_soon_threadsafe(self.io_standby)
 
     def io_standby(self):
@@ -426,12 +428,12 @@ class HDMINetwork:
             self._loop.run_in_executor(None, self._loop.run_forever)
 
     def command_callback(self, raw_command):
-        _LOGGER.debug("Queuing callback")  # pragma: no cover
+        _LOGGER.debug("%s",
+                      raw_command)  # pragma: no cover
         self._loop.call_soon_threadsafe(self._async_callback, raw_command)
 
     def _async_callback(self, raw_command):
         command = CecCommand(raw_command[3:])
-        _LOGGER.debug("In callback %s", command)
         updated = False
         if command.src == 15:
             for i in range(15):
@@ -450,6 +452,7 @@ class HDMINetwork:
         self._running = False
         for d in self.devices:
             d.stop()
+        self._adapter.Close()
         if self._managed_loop:
             _LOGGER.debug("Stopping HDMI loop.")  # pragma: no cover
             self._loop.stop()
