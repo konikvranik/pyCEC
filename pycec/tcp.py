@@ -6,6 +6,7 @@ from pycec.network import AbstractCecAdapter
 DEFAULT_PORT = 9526
 
 
+# pragma: no cover
 class TcpAdapter(AbstractCecAdapter):
     def __init__(self, host, port=DEFAULT_PORT, loop=asyncio.new_event_loop()):
         super().__init__()
