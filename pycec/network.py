@@ -240,6 +240,9 @@ class HDMIDevice:
         command = CecCommand(cmd)
         yield from self.async_send_command(command)
 
+    def send_command(self, command):
+        self._loop.create_task(self.async_send_command(command))
+
     @asyncio.coroutine
     def async_send_command(self, command: CecCommand):
         command.dst = self._logical_address
