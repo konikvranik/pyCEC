@@ -1,6 +1,8 @@
 import asyncio
+import logging
 from unittest import TestCase
 
+from pycec import _LOGGER
 from pycec.commands import CecCommand
 from pycec.const import CMD_POWER_STATUS, CMD_OSD_NAME, CMD_VENDOR, \
     CMD_PHYSICAL_ADDRESS
@@ -8,6 +10,17 @@ from pycec.network import HDMINetwork, HDMIDevice, AbstractCecAdapter
 
 
 class TestHDMINetwork(TestCase):
+    def setUp(self):
+
+        # Configure logging
+        _LOGGER.setLevel(logging.INFO)
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.INFO)
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        ch.setFormatter(formatter)
+        _LOGGER.addHandler(ch)
+
     def test_devices(self):
         loop = asyncio.get_event_loop()
         network = HDMINetwork(MockAdapter(
@@ -15,7 +28,7 @@ class TestHDMINetwork(TestCase):
              False, False, False, False, False,
              False]), scan_interval=0, loop=loop)
         network._scan_delay = 0
-        network._adapter.set_command_callback(network.command_callback)
+        #network._adapter.set_command_callback(network.command_callback)
         network.init()
         network.scan()
         loop.run_until_complete(asyncio.sleep(.1, loop))
@@ -38,7 +51,7 @@ class TestHDMINetwork(TestCase):
              False, False, False, False, False, False]), scan_interval=0,
             loop=loop)
         network._scan_delay = 0
-        network._adapter.set_command_callback(network.command_callback)
+        #network._adapter.set_command_callback(network.command_callback)
         network.init()
         network.scan()
         loop.run_until_complete(asyncio.sleep(.1, loop))
@@ -78,7 +91,10 @@ class MockAdapter(AbstractCecAdapter):
         pass
 
     def init(self, callback: callable = None):
+        f = asyncio.Future()
+        f.set_result(True)
         self._initialized = True
+        return f
 
     def power_on_devices(self):
         pass

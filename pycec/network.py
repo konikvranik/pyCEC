@@ -99,8 +99,8 @@ class AbstractCecAdapter:
             if self._loop:
                 for signame in ('SIGINT', 'SIGTERM'):
                     self._loop.add_signal_handler(getattr(signal, signame),
-                                                  self.shutdown())
-        except NotImplementedError:
+                                                  self.shutdown)
+        except:
             pass
 
 
@@ -136,8 +136,8 @@ class HDMIDevice:
             if self._loop:
                 for signame in ('SIGINT', 'SIGTERM'):
                     self._loop.add_signal_handler(getattr(signal, signame),
-                                                  self.stop())
-        except NotImplementedError:
+                                                  self.stop)
+        except:
             pass
 
     @property
@@ -316,8 +316,8 @@ class HDMINetwork:
             if self._loop:
                 for signame in ('SIGINT', 'SIGTERM'):
                     self._loop.add_signal_handler(getattr(signal, signame),
-                                                  self.stop())
-        except NotImplementedError:
+                                                  self.stop)
+        except:
             pass
 
     @property

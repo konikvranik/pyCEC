@@ -28,7 +28,7 @@ class TcpAdapter(AbstractCecAdapter):
         self._activate_source = activate_source
         for signame in ('SIGINT', 'SIGTERM'):
             self._inner_loop.add_signal_handler(getattr(signal, signame),
-                                                self.shutdown())
+                                                self.shutdown)
 
     def _after_init(self, callback, f):
         _LOGGER.debug("New client: %s", self._client)
