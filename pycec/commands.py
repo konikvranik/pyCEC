@@ -1,6 +1,6 @@
 from typing import List
 
-from pycec.const import CMD_KEY_PRESS, CMD_KEY_RELEASE
+from pycec.const import CMD_KEY_PRESS, CMD_KEY_RELEASE, CMD_POLL
 
 
 class CecCommand:
@@ -52,16 +52,21 @@ class CecCommand:
     @property
     def raw(self) -> str:
         atts = "".join(((":%02x" % i) for i in self.att))
-        return "%1x%1x:%02x%s" % (self.src if self.src is not None else 0xf,
-                                  self.dst if self.dst is not None else 0xf,
-                                  self.cmd, atts)
+        cmd = ("" if self.cmd is None else (":%02x" % self.cmd))
+        return "%1x%1x%s%s" % (self.src if self.src is not None else 0xf,
+                               self.dst if self.dst is not None else 0xf,
+                               cmd, atts)
 
     def _raw(self, value: str):
         atts = value.split(':')
         self.src = int(atts[0][0], 16)
         self.dst = int(atts[0][1], 16)
-        self._cmd = int(atts[1], 16)
-        self._att = list(int(x, 16) for x in atts[2:])
+        if len(atts) > 1:
+            self._cmd = int(atts[1], 16)
+            self._att = list(int(x, 16) for x in atts[2:])
+        else:
+            self._cmd = None
+            self._att = None
 
     def __str__(self):
         return self.raw
@@ -76,11 +81,12 @@ class KeyPressCommand(CecCommand):
     def key(self):
         return self._key
 
-    @key.setter
-    def key(self, key):
-        self._key = key
-
 
 class KeyReleaseCommand(CecCommand):
     def __init__(self, dst: int = None, src: int = None):
         super().__init__(CMD_KEY_RELEASE, dst, src)
+
+
+class PollCommand(CecCommand):
+    def __init__(self, dst, src: int = None):
+        super().__init__(CMD_POLL, dst, src)

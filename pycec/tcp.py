@@ -3,7 +3,8 @@ import functools
 import logging
 import time
 
-from pycec.commands import CecCommand, KeyPressCommand, KeyReleaseCommand
+from pycec.commands import CecCommand, KeyPressCommand, KeyReleaseCommand, \
+    PollCommand
 from pycec.const import CMD_STANDBY, KEY_POWER
 from pycec.network import AbstractCecAdapter, HDMINetwork
 
@@ -17,8 +18,9 @@ class TcpAdapter(AbstractCecAdapter):
     def __init__(self, host, port=DEFAULT_PORT, name=None,
                  activate_source=None):
         super().__init__()
+        self._polling = dict()
         self._command_callback = None
-        self._inner_loop = asyncio.new_event_loop()
+        self._tcp_loop = asyncio.new_event_loop()
         self._host = host
         self._port = port
         self._client = None
@@ -31,19 +33,20 @@ class TcpAdapter(AbstractCecAdapter):
         self._initialized = True
         if callback:
             callback()
-        self._inner_loop.run_in_executor(None, self._inner_loop.run_forever)
+        self._tcp_loop.run_in_executor(None, self._tcp_loop.run_forever)
+
+    def _init(self):
+        self._client, status = self._tcp_loop.run_until_complete(
+            self._tcp_loop.create_connection(lambda: TcpProtocol(self),
+                                             host=self._host,
+                                             port=self._port))
+        _LOGGER.debug("Connection started.")
 
     def init(self, callback: callable = None):
-        future = asyncio.Future(loop=self._loop)
-        future.add_done_callback(functools.partial(self._after_init, callback))
         _LOGGER.debug("Starting connection...")
-        self._client, status = self._inner_loop.run_until_complete(
-            self._inner_loop.create_connection(lambda: TcpProtocol(self),
-                                               host=self._host,
-                                               port=self._port))
-        _LOGGER.debug("Connection started.")
-        future.set_result(True)
-        return future
+        task = self._loop.run_in_executor(None, self._init)
+        task.add_done_callback(functools.partial(self._after_init, callback))
+        return task
 
     def shutdown(self):
         if self._client:
@@ -51,11 +54,22 @@ class TcpAdapter(AbstractCecAdapter):
         if self._transport:
             self._transport.close()
 
+    def _poll_device(self, device):
+        req = self._loop.time()
+        poll_bucket = self._polling.get(device, set())
+        poll_bucket.add(req)
+        self._polling.update({device: poll_bucket})
+        self.transmit(PollCommand(device))
+        while True:
+            if req not in self._polling.get(device, set()):
+                _LOGGER.debug("Found device %d.", device)
+                return True
+            if self._loop.time() > (req + 5):
+                return False
+            asyncio.sleep(.1, loop=self._loop)
+
     def poll_device(self, device):
-        # self.transmit(CecCommand(CMD_POWER_STATUS[0], dst=device))
-        f = asyncio.Future(loop=self._loop)
-        f.set_result(True)
-        return f
+        return self._loop.run_in_executor(None, self._poll_device, device)
 
     def get_logical_address(self):
         return 0xf
@@ -91,19 +105,27 @@ class TcpProtocol(asyncio.Protocol):
     def data_received(self, data: bytes):
         self.buffer += bytes.decode(data)
         for line in self.buffer.splitlines(keepends=True):
-            if line.endswith('\n'):
-                _LOGGER.debug("Received %s forom %s", line.rstrip(),
+            if line.count('\n'):
+                line = line.rstrip()
+                _LOGGER.debug("Received %s from %s", line,
                               self.transport.get_extra_info('peername'))
-                self._adapter._command_callback("<< " + line.rstrip())
+                if len(line) == 2:
+                    cmd = CecCommand(line)
+                    if cmd.src in self._adapter._polling:
+                        del self._adapter._polling[cmd.src]
+                else:
+                    self._adapter._command_callback("<< " + line)
                 self.buffer = ''
             else:
                 self.buffer = line
 
     def eof_received(self):
         self._adapter.shutdown()
+        self._adapter._initialized = False
 
     def connection_lost(self, exc):
         self._adapter.shutdown()
+        self._adapter._initialized = False
 
 
 def main():
@@ -114,7 +136,7 @@ def main():
         for d in hdmi_network.devices:
             _LOGGER.info("Device: %s", d)
 
-        time.sleep(2)
+        time.sleep(7)
 
 
 if __name__ == '__main__':
@@ -122,8 +144,25 @@ if __name__ == '__main__':
     _LOGGER.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    try:
+        from colorlog import ColoredFormatter
+
+        formatter = ColoredFormatter(
+            "%(log_color)s%(levelname)-8s %(message)s",
+            datefmt=None,
+            reset=True,
+            log_colors={
+                'DEBUG': 'cyan',
+                'INFO': 'green',
+                'WARNING': 'yellow',
+                'ERROR': 'red',
+                'CRITICAL': 'red',
+            }
+        )
+    except ImportError:
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
     ch.setFormatter(formatter)
     _LOGGER.addHandler(ch)
 
