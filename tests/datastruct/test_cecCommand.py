@@ -54,6 +54,8 @@ class TestCecCommand(TestCase):
     def test_raw(self):
         cc = CecCommand("1f:90:02:05:89")
         self.assertEqual(cc.raw, "1f:90:02:05:89")
+        cc = CecCommand("1f:90")
+        self.assertEqual(cc.raw, "1f:90")
         cc = CecCommand("2c")
         self.assertEqual(cc.raw, "2c")
         cc = CecCommand(CMD_POLL, dst=3)

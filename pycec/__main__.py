@@ -77,7 +77,7 @@ def main():
     coro = loop.create_server(CECServerProtocol, '0.0.0.0', 9526)
     server = loop.run_until_complete(coro)
     # Serve requests until Ctrl+C is pressed
-    print('Serving on {}'.format(server.sockets[0].getsockname()))
+    _LOGGER.info('Serving on {}'.format(server.sockets[0].getsockname()))
     if _LOGGER.level >= logging.DEBUG:
         loop.create_task(async_show_devices(network, loop))
     try:

@@ -121,9 +121,11 @@ class TcpProtocol(asyncio.Protocol):
 
     def eof_received(self):
         self._adapter.shutdown()
+        self._adapter._initialized = False
 
     def connection_lost(self, exc):
         self._adapter.shutdown()
+        self._adapter._initialized = False
 
 
 def main():
