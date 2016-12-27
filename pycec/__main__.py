@@ -4,13 +4,14 @@ import logging
 from pycec.cec import CecAdapter
 from pycec.commands import CecCommand
 from . import _LOGGER
-from .network import HDMINetwork, CecConfig
+from .network import HDMINetwork
 
 
 def main():
     transports = set()
     loop = asyncio.get_event_loop()
-    network = HDMINetwork(CecAdapter("pyCEC", loop=loop), loop=loop)
+    network = HDMINetwork(CecAdapter("pyCEC", activate_source=False),
+                          loop=loop)
 
     class CECServerProtocol(asyncio.Protocol):
         transport = None
@@ -23,11 +24,11 @@ def main():
             transports.add(transport)
 
         def data_received(self, data):
-            _LOGGER.info("Received %s from %s", data,
-                         self.transport.get_extra_info('peername'))
             self.buffer += bytes.decode(data)
             for line in self.buffer.splitlines(keepends=True):
                 if line.endswith('\n'):
+                    _LOGGER.info("Received %s from %s", line,
+                                 self.transport.get_extra_info('peername'))
                     network.send_command(CecCommand(line.rstrip()))
                     self.buffer = ''
                 else:
@@ -49,7 +50,7 @@ def main():
 
     _LOGGER.info("CEC initialized... Starting server.")
     # Each client connection will create a new protocol instance
-    coro = loop.create_server(CECServerProtocol, '127.0.0.1', 9526)
+    coro = loop.create_server(CECServerProtocol, '0.0.0.0', 9526)
     server = loop.run_until_complete(coro)
     # Serve requests until Ctrl+C is pressed
     print('Serving on {}'.format(server.sockets[0].getsockname()))

@@ -15,7 +15,7 @@ class TestHDMINetwork(TestCase):
              False, False, False, False, False,
              False]), scan_interval=0, loop=loop)
         network._scan_delay = 0
-        network._adapter.SetCommandCallback(network.command_callback)
+        network._adapter.set_command_callback(network.command_callback)
         network.init()
         network.scan()
         loop.run_until_complete(asyncio.sleep(.1, loop))
@@ -38,7 +38,7 @@ class TestHDMINetwork(TestCase):
              False, False, False, False, False, False]), scan_interval=0,
             loop=loop)
         network._scan_delay = 0
-        network._adapter.SetCommandCallback(network.command_callback)
+        network._adapter.set_command_callback(network.command_callback)
         network.init()
         network.scan()
         loop.run_until_complete(asyncio.sleep(.1, loop))
@@ -80,13 +80,13 @@ class MockAdapter(AbstractCecAdapter):
     def init(self, callback: callable = None):
         self._initialized = True
 
-    def PowerOnDevices(self):
+    def power_on_devices(self):
         pass
 
-    def StandbyDevices(self):
+    def standby_devices(self):
         pass
 
-    def SetCommandCallback(self, callback):
+    def set_command_callback(self, callback):
         self._command_callback = callback
 
     def __init__(self, data):
@@ -94,12 +94,12 @@ class MockAdapter(AbstractCecAdapter):
         self._command_callback = None
         super().__init__()
 
-    def PollDevice(self, i):
+    def poll_device(self, i):
         f = asyncio.Future()
         f.set_result(self._data[i])
         return f
 
-    def Transmit(self, command):
+    def transmit(self, command):
         cmd = None
         att = None
         if command.cmd == CMD_POWER_STATUS[0]:
@@ -117,5 +117,5 @@ class MockAdapter(AbstractCecAdapter):
         response = CecCommand(cmd, src=command.dst, dst=command.src, att=att)
         self._command_callback(">> " + response.raw)
 
-    def GetLogicalAddresses(self):
-        return LogicalAddress(2)
+    def get_logical_address(self):
+        return 2

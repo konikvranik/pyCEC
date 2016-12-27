@@ -1,9 +1,12 @@
 from concurrent.futures import ThreadPoolExecutor
 
-from pycec import _LOGGER
+import logging
+
 from pycec.commands import CecCommand
 from pycec.const import VENDORS, ADDR_RECORDINGDEVICE1
 from pycec.network import AbstractCecAdapter
+
+_LOGGER = logging.getLogger(__name__)
 
 
 # pragma: no cover
@@ -23,28 +26,28 @@ class CecAdapter(AbstractCecAdapter):
             self._cecconfig.bActivateSource = 1 if activate_source else 0
         self._cecconfig.deviceTypes.Add(device_type)
 
-    def SetCommandCallback(self, callback):
+    def set_command_callback(self, callback):
         self._cecconfig.SetCommandCallback(callback)
 
-    def StandbyDevices(self):
+    def standby_devices(self):
         self._loop.run_in_executor(self._io_executor,
                                    self._adapter.StandbyDevices)
 
-    def PollDevice(self, device):
+    def poll_device(self, device):
         return self._loop.run_in_executor(
             self._io_executor, self._adapter.PollDevice, device)
 
     def shutdown(self):
         self._adapter.Close()
 
-    def GetLogicalAddresses(self):
-        return self._adapter.GetLogicalAddresses()
+    def get_logical_address(self):
+        return self._adapter.GetLogicalAddresses().primary
 
-    def PowerOnDevices(self):
+    def power_on_devices(self):
         self._loop.run_in_executor(self._io_executor,
                                    self._adapter.PowerOnDevices)
 
-    def Transmit(self, command: CecCommand):
+    def transmit(self, command: CecCommand):
         self._loop.run_in_executor(
             self._io_executor, self._adapter.Transmit,
             self._adapter.CommandFromString(command.raw))
