@@ -1,6 +1,5 @@
 import asyncio
 import functools
-import signal
 from functools import reduce
 from multiprocessing import Queue
 from typing import List
@@ -95,13 +94,6 @@ class AbstractCecAdapter:
 
     def set_event_loop(self, loop):
         self._loop = loop
-        try:
-            if self._loop:
-                for signame in ('SIGINT', 'SIGTERM'):
-                    self._loop.add_signal_handler(getattr(signal, signame),
-                                                  self.shutdown)
-        except:
-            pass
 
 
 class HDMIDevice:
@@ -132,13 +124,6 @@ class HDMIDevice:
         self._type = int()
         self._update_callback = None
         self._status = None
-        try:
-            if self._loop:
-                for signame in ('SIGINT', 'SIGTERM'):
-                    self._loop.add_signal_handler(getattr(signal, signame),
-                                                  self.stop)
-        except:
-            pass
 
     @property
     def logical_address(self) -> int:
@@ -312,13 +297,6 @@ class HDMINetwork:
         self._device_added_callback = None
         self._initialized_callback = None
         self._device_removed_callback = None
-        try:
-            if self._loop:
-                for signame in ('SIGINT', 'SIGTERM'):
-                    self._loop.add_signal_handler(getattr(signal, signame),
-                                                  self.stop)
-        except:
-            pass
 
     @property
     def initialized(self):

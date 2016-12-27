@@ -1,7 +1,6 @@
 import asyncio
 import functools
 import logging
-import signal
 import time
 
 from pycec.commands import CecCommand, KeyPressCommand, KeyReleaseCommand
@@ -26,9 +25,6 @@ class TcpAdapter(AbstractCecAdapter):
         self._transport = None
         self._osd_name = name
         self._activate_source = activate_source
-        for signame in ('SIGINT', 'SIGTERM'):
-            self._inner_loop.add_signal_handler(getattr(signal, signame),
-                                                self.shutdown)
 
     def _after_init(self, callback, f):
         _LOGGER.debug("New client: %s", self._client)
