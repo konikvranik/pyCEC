@@ -5,7 +5,7 @@ from unittest import TestCase
 from pycec import _LOGGER
 from pycec.commands import CecCommand
 from pycec.const import CMD_POWER_STATUS, CMD_OSD_NAME, CMD_VENDOR, \
-    CMD_PHYSICAL_ADDRESS
+    CMD_PHYSICAL_ADDRESS, CMD_DECK_STATUS, CMD_AUDIO_STATUS
 from pycec.network import HDMINetwork, HDMIDevice, AbstractCecAdapter
 
 
@@ -28,7 +28,7 @@ class TestHDMINetwork(TestCase):
              False, False, False, False, False,
              False]), scan_interval=0, loop=loop)
         network._scan_delay = 0
-        #network._adapter.set_command_callback(network.command_callback)
+        # network._adapter.set_command_callback(network.command_callback)
         network.init()
         network.scan()
         loop.run_until_complete(asyncio.sleep(.1, loop))
@@ -51,7 +51,7 @@ class TestHDMINetwork(TestCase):
              False, False, False, False, False, False]), scan_interval=0,
             loop=loop)
         network._scan_delay = 0
-        #network._adapter.set_command_callback(network.command_callback)
+        # network._adapter.set_command_callback(network.command_callback)
         network.init()
         network.scan()
         loop.run_until_complete(asyncio.sleep(.1, loop))
@@ -130,6 +130,12 @@ class MockAdapter(AbstractCecAdapter):
         elif command.cmd == CMD_PHYSICAL_ADDRESS[0]:
             cmd = CMD_PHYSICAL_ADDRESS[1]
             att = [0x09, 0xB0, 0x02]
+        elif command.cmd == CMD_DECK_STATUS[0]:
+            cmd = CMD_DECK_STATUS[1]
+            att = [0x09]
+        elif command.cmd == CMD_AUDIO_STATUS[0]:
+            cmd = CMD_AUDIO_STATUS[1]
+            att = [0x65]
         response = CecCommand(cmd, src=command.dst, dst=command.src, att=att)
         self._command_callback(">> " + response.raw)
 
