@@ -391,7 +391,7 @@ class HDMINetwork:
         return tuple(self._devices.values())
 
     def get_device(self, i) -> HDMIDevice:
-        return self._devices[i]
+        return self._devices.get(i, None)
 
     @asyncio.coroutine
     def async_watch(self, loop=None):
