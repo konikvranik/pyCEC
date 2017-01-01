@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 
+from pycec import DEFAULT_PORT, DEFAULT_HOST
 from pycec.cec import CecAdapter
 from pycec.commands import CecCommand, PollCommand
 from . import _LOGGER
@@ -22,12 +23,26 @@ def async_show_devices(network, loop):
 
 
 def usage():
+    print("python -m pycec OPTS")
+    print()
+    print("OPTS:")
+    print("    --interface=INTERFACE_ADDRESS    " +
+          "Address of interface to bind to. Default is '%s'." % DEFAULT_HOST)
+    print("    -i INTERFACE_ADDRESS")
+    print()
+    print("    --port=PORT                      " +
+          "Port to bind to. Default is '%s'." % DEFAULT_PORT)
+    print("    -p PORT")
+    print("    --help                           " +
+          "Print this help message.")
+    print("    -h")
+    print()
     pass
 
 
 def main():
-    host = '0.0.0.0'
-    port = 9526
+    host = DEFAULT_HOST
+    port = DEFAULT_PORT
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hi:p:",
                                    ["help", "interface=", "port="])
