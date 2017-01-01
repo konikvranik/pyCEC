@@ -1,6 +1,8 @@
 import asyncio
+import configparser
 import functools
 import logging
+import os
 
 from pycec.cec import CecAdapter
 from pycec.commands import CecCommand, PollCommand
@@ -18,6 +20,15 @@ def async_show_devices(network, loop):
 
 
 def main():
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    config = configparser.ConfigParser()
+    config['DEFAULT'] = {'host': '0.0.0.0', 'port': 9526, 'logLevel': 'INFO'}
+    config.read(['/etc/pycec.conf', os.environ['HOME'] + '/.pycec',
+                 script_dir + '/pycec.conf'])
+
+    # Configure logging
+    setup_logger(config)
+
     transports = set()
     loop = asyncio.get_event_loop()
     network = HDMINetwork(CecAdapter("pyCEC", activate_source=False),
@@ -74,7 +85,8 @@ def main():
 
     _LOGGER.info("CEC initialized... Starting server.")
     # Each client connection will create a new protocol instance
-    coro = loop.create_server(CECServerProtocol, '0.0.0.0', 9526)
+    coro = loop.create_server(CECServerProtocol, config['host'],
+                              config['port'])
     server = loop.run_until_complete(coro)
     # Serve requests until Ctrl+C is pressed
     _LOGGER.info('Serving on {}'.format(server.sockets[0].getsockname()))
@@ -91,31 +103,32 @@ def main():
     loop.close()
 
 
-# Configure logging
-_LOGGER.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-try:
-    from colorlog import ColoredFormatter
+def setup_logger(config):
+    log_level = getattr(logging, config['logLevel'])
+    _LOGGER.setLevel(log_level)
+    ch = logging.StreamHandler()
+    ch.setLevel(log_level)
+    try:
+        from colorlog import ColoredFormatter
 
-    formatter = ColoredFormatter(
-        "%(log_color)s%(levelname)-8s %(message)s",
-        datefmt=None,
-        reset=True,
-        log_colors={
-            'DEBUG': 'cyan',
-            'INFO': 'green',
-            'WARNING': 'yellow',
-            'ERROR': 'red',
-            'CRITICAL': 'red',
-        }
-    )
-except ImportError:
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = ColoredFormatter(
+            "%(log_color)s%(levelname)-8s %(message)s",
+            datefmt=None,
+            reset=True,
+            log_colors={
+                'DEBUG': 'cyan',
+                'INFO': 'green',
+                'WARNING': 'yellow',
+                'ERROR': 'red',
+                'CRITICAL': 'red',
+            }
+        )
+    except ImportError:
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    _LOGGER.addHandler(ch)
 
-ch.setFormatter(formatter)
-_LOGGER.addHandler(ch)
 
 if __name__ == '__main__':
     main()
