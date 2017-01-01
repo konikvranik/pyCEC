@@ -1,10 +1,9 @@
 import asyncio
 import configparser
 import functools
-import getopt
 import logging
 import os
-import sys
+from optparse import OptionParser
 
 from pycec import DEFAULT_PORT, DEFAULT_HOST
 from pycec.cec import CecAdapter
@@ -22,51 +21,8 @@ def async_show_devices(network, loop):
         yield from asyncio.sleep(10, loop=loop)
 
 
-def usage():
-    print("python -m pycec OPTS")
-    print()
-    print("OPTS:")
-    print("    --interface=INTERFACE_ADDRESS    " +
-          "Address of interface to bind to. Default is '%s'." % DEFAULT_HOST)
-    print("    -i INTERFACE_ADDRESS")
-    print()
-    print("    --port=PORT                      " +
-          "Port to bind to. Default is '%s'." % DEFAULT_PORT)
-    print("    -p PORT")
-    print("    --help                           " +
-          "Print this help message.")
-    print("    -h")
-    print()
-    pass
-
-
 def main():
-    host = DEFAULT_HOST
-    port = DEFAULT_PORT
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], "hi:p:",
-                                   ["help", "interface=", "port="])
-    except getopt.GetoptError as err:
-        # print help information and exit:
-        print(err)  # will print something like "option -a not recognized"
-        usage()
-        sys.exit(2)
-    for o, a in opts:
-        if o in ("-i", "--interface"):
-            host = a
-        elif o in ("-h", "--help"):
-            usage()
-            sys.exit()
-        elif o in ("-p", "--port"):
-            port = a
-        else:
-            assert False, "unhandled option"
-
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    config = configparser.ConfigParser()
-    config['DEFAULT'] = {'host': host, 'port': port, 'logLevel': 'INFO'}
-    config.read(['/etc/pycec.conf', os.environ['HOME'] + '/.pycec',
-                 script_dir + '/pycec.conf'])
+    config = configure()
 
     # Configure logging
     setup_logger(config)
@@ -127,8 +83,8 @@ def main():
 
     _LOGGER.info("CEC initialized... Starting server.")
     # Each client connection will create a new protocol instance
-    coro = loop.create_server(CECServerProtocol, config['host'],
-                              config['port'])
+    coro = loop.create_server(CECServerProtocol, config['DEFAULT']['host'],
+                              int(config['DEFAULT']['port']))
     server = loop.run_until_complete(coro)
     # Serve requests until Ctrl+C is pressed
     _LOGGER.info('Serving on {}'.format(server.sockets[0].getsockname()))
@@ -145,8 +101,37 @@ def main():
     loop.close()
 
 
+def configure():
+    parser = OptionParser()
+    parser.add_option("-i", "--interface", dest="host", action="store",
+                      type="string", default=DEFAULT_HOST,
+                      help=("Address of interface to bind to. Default is '%s'."
+                            % DEFAULT_HOST))
+    parser.add_option("-p", "--port", dest="port", action="store", type="int",
+                      default=DEFAULT_PORT,
+                      help=("Port to bind to. Default is '%s'."
+                            % DEFAULT_PORT))
+    parser.add_option("-v", "--verbose", dest="verbose", action="count",
+                      default=0, help="Increase verbosity.")
+    parser.add_option("-q", "--quiet", dest="quiet", action="count",
+                      default=0, help="Decrease verbosity.")
+    (options, args) = parser.parse_args()
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    config = configparser.ConfigParser()
+    config['DEFAULT'] = {'host': options.host, 'port': options.port,
+                         'logLevel': logging.INFO + (
+                             (options.quiet - options.verbose) * 10)}
+    config.read(['/etc/pycec.conf', os.environ['HOME'] + '/.pycec',
+                 script_dir + '/pycec.conf'])
+
+    return config
+
+
 def setup_logger(config):
-    log_level = getattr(logging, config['logLevel'])
+    try:
+        log_level = int(config['DEFAULT']['logLevel'])
+    except ValueError:
+        log_level = config['DEFAULT']['logLevel']
     _LOGGER.setLevel(log_level)
     ch = logging.StreamHandler()
     ch.setLevel(log_level)

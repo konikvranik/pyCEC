@@ -32,4 +32,9 @@ setup(
         "License :: OSI Approved :: MIT License",
         'Programming Language :: Python :: 3.4',
     ],
+    entry_points={
+        'console_scripts': [
+            'pycec=pycec:main',
+        ],
+    },
 )
