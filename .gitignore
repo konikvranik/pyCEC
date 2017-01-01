@@ -1,6 +1,4 @@
 .idea
-*.pyc
-**/*.pyc
 build
 .eggs
 .cache

@@ -11,7 +11,7 @@ REQUIRES = [
 
 setup(
     name="pyCEC",
-    version="0.4.5",
+    version="0.4.6",
     author="Petr Vraník",
     author_email="hpa@suteren.net",
     description=(
@@ -32,4 +32,9 @@ setup(
         "License :: OSI Approved :: MIT License",
         'Programming Language :: Python :: 3.4',
     ],
+    entry_points={
+        'console_scripts': [
+            'pycec=pycec:main',
+        ],
+    },
 )
