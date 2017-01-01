@@ -1,8 +1,10 @@
 import asyncio
 import configparser
 import functools
+import getopt
 import logging
 import os
+import sys
 
 from pycec.cec import CecAdapter
 from pycec.commands import CecCommand, PollCommand
@@ -19,10 +21,35 @@ def async_show_devices(network, loop):
         yield from asyncio.sleep(10, loop=loop)
 
 
+def usage():
+    pass
+
+
 def main():
+    host = '0.0.0.0'
+    port = 9526
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "hi:p:",
+                                   ["help", "interface=", "port="])
+    except getopt.GetoptError as err:
+        # print help information and exit:
+        print(err)  # will print something like "option -a not recognized"
+        usage()
+        sys.exit(2)
+    for o, a in opts:
+        if o in ("-i", "--interface"):
+            host = a
+        elif o in ("-h", "--help"):
+            usage()
+            sys.exit()
+        elif o in ("-p", "--port"):
+            port = a
+        else:
+            assert False, "unhandled option"
+
     script_dir = os.path.dirname(os.path.realpath(__file__))
     config = configparser.ConfigParser()
-    config['DEFAULT'] = {'host': '0.0.0.0', 'port': 9526, 'logLevel': 'INFO'}
+    config['DEFAULT'] = {'host': host, 'port': port, 'logLevel': 'INFO'}
     config.read(['/etc/pycec.conf', os.environ['HOME'] + '/.pycec',
                  script_dir + '/pycec.conf'])
 
