@@ -7,6 +7,7 @@ PACKAGES = find_packages(exclude=['tests', 'tests.*', 'build'])
 
 REQUIRES = [
     # 'cec',
+    'typing'
 ]
 
 setup(
@@ -34,7 +35,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'pycec=pycec:main',
+            'pycec=pycec.__main__:main',
         ],
     },
 )
