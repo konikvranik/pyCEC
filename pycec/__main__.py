@@ -121,8 +121,10 @@ def configure():
     config['DEFAULT'] = {'host': options.host, 'port': options.port,
                          'logLevel': logging.INFO + (
                              (options.quiet - options.verbose) * 10)}
-    config.read(['/etc/pycec.conf', os.environ['HOME'] + '/.pycec',
-                 script_dir + '/pycec.conf'])
+    paths = ['/etc/pycec.conf', script_dir + '/pycec.conf']
+    if 'HOME' in os.environ:
+        paths.append(os.environ['HOME'] + '/.pycec')
+    config.read(paths)
 
     return config
 
