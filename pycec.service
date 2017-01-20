@@ -1,0 +1,8 @@
+[Unit]
+Description=pycec
+
+[Service]
+ExecStart=/usr/local/bin/pycec
+
+[Install]
+WantedBy=multi-user.target
