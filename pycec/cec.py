@@ -2,7 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import logging
 
-from pycec.commands import CecCommand
+from pycec.commands import CecCommand, KeyPressCommand
 from pycec.const import VENDORS, ADDR_RECORDINGDEVICE1
 from pycec.network import AbstractCecAdapter
 
@@ -27,6 +27,8 @@ class CecAdapter(AbstractCecAdapter):
         self._cecconfig.deviceTypes.Add(device_type)
 
     def set_command_callback(self, callback):
+        self._cecconfig.SetKeyPressCallback(
+            lambda key, delay: callback(KeyPressCommand(key).raw))
         self._cecconfig.SetCommandCallback(callback)
 
     def standby_devices(self):
