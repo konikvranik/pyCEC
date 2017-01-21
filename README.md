@@ -17,5 +17,18 @@ and to make TCP <=> HDMI bridge to control HDMI devices over TCP network as a [s
 `libcec` dependency
 -----------------
 
-[libcec](https://github.com/Pulse-Eight/libcec) must be installed for this component to work. Follow the installation instructions for your environment, provided at the link. `libcec` installs Python 3 bindings by default as a system Python module. If you are running Home Assistant in a [Python virtual environment](/getting-started/installation-virtualenv/), make sure it can access the system module, by either symlinking it or using the `--system-site-packages` flag.
+[libcec](https://github.com/Pulse-Eight/libcec) must be installed for this module to work in direct mode. Follow the installation instructions for your environment, provided at the link. `libcec` installs Python 3 bindings by default as a system Python module. If you are running Home Assistant in a [Python virtual environment](/getting-started/installation-virtualenv/), make sure it can access the system module, by either symlinking it or using the `--system-site-packages` flag.
+
+When using as network client, libcec is not needed.
+
+running server
+--------------
+
+You can run pyCEC server which will provide bridge between HDMI CEC port and TCP network by exexcuting `python3 -m pycec`.
+Server will bind to default port `9526` on all interfaces.
+
+Then you can connect by client part of pyCEC without need of libcec or HDMI port on client's machine.
+Just use `TcpAdapter` instead of `CecAdapter`.
+
+
 
