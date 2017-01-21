@@ -10,20 +10,19 @@ goal <https://github.com/konikvranik/pyCEC/projects/1>`__ and to make
 TCP <=> HDMI bridge to control HDMI devices over TCP network as a
 `secondary goal <https://github.com/konikvranik/pyCEC/projects/2>`__.
 
-``libcec`` dependency
+``libcec`` dependency [1]_
 ---------------------
 
-`libcec <https://github.com/Pulse-Eight/libcec>`__ must be installed for
+`libcec <https://github.com/Pulse-Eight/libcec>`__ must be installed [2]_ for
 this module to work in direct mode. Follow the installation instructions
-for your environment, provided at the link. ``libcec`` installs Python 3
-bindings by default as a system Python module. If you are running Home
-Assistant in a `Python virtual
+for your environment, provided at the link.  ``libcec`` installs Python 3
+bindings by default as a system Python module. If you are running pyCEC in a `Python virtual
 environment </getting-started/installation-virtualenv/>`__, make sure it
 can access the system module, by either symlinking it or using the
 ``--system-site-packages`` flag.
 
-- \:bulb: When using ``pyCEC`` as a network client, ``libcec`` is not needed.
-- \:warning: Do not use ``pip3 install cec``. This will fail. Compile ``libcec`` instead.
+.. [1] \:bulb: When using ``pyCEC`` as a network client, ``libcec`` is not needed.
+.. [2] \:warning: Do not use ``pip3 install cec``. This will fail. Compile ``libcec`` instead.
 
 running server
 --------------
