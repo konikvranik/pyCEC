@@ -22,7 +22,7 @@ environment </getting-started/installation-virtualenv/>`__, make sure it
 can access the system module, by either symlinking it or using the
 ``--system-site-packages`` flag.
 
-:bulb: When using as network client, libcec is not needed.
+\:bulb: When using as network client, libcec is not needed.
 
 running server
 --------------
