@@ -19,7 +19,7 @@ and to make TCP <=> HDMI bridge to control HDMI devices over TCP network as a [s
 
 [libcec](https://github.com/Pulse-Eight/libcec) must be installed for this module to work in direct mode. Follow the installation instructions for your environment, provided at the link. `libcec` installs Python 3 bindings by default as a system Python module. If you are running Home Assistant in a [Python virtual environment](/getting-started/installation-virtualenv/), make sure it can access the system module, by either symlinking it or using the `--system-site-packages` flag.
 
-When using as network client, libcec is not needed.
+:bulb: When using as network client, libcec is not needed.
 
 running server
 --------------
