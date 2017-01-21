@@ -46,7 +46,8 @@ class TcpAdapter(AbstractCecAdapter):
                 break
             except ConnectionRefusedError as e:
                 _LOGGER.warning(
-                    "Unable to connect due to %s. Trying again in %d seconds, %d attempts remaining.",
+                    "Unable to connect due to %s. Trying again in %d seconds, "
+                    "%d attempts remaining.",
                     e, CONNECTION_ATTEMPT_DELAY, MAX_CONNECTION_ATTEMPTS - i)
                 time.sleep(CONNECTION_ATTEMPT_DELAY)
         else:
