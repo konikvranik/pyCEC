@@ -9,7 +9,8 @@ from pycec.const import CMD_STANDBY, KEY_POWER
 from pycec.network import AbstractCecAdapter, HDMINetwork
 
 DEFAULT_PORT = 9526
-
+MAX_CONNECTION_ATTEMPTS = 5
+CONNECTION_ATTEMPT_DELAY = 3
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -23,24 +24,35 @@ class TcpAdapter(AbstractCecAdapter):
         self._tcp_loop = asyncio.new_event_loop()
         self._host = host
         self._port = port
-        self._client = None
         self._transport = None
         self._osd_name = name
         self._activate_source = activate_source
 
     def _after_init(self, callback, f):
-        _LOGGER.debug("New client: %s", self._client)
+        _LOGGER.debug("New client: %s", self._transport)
         self._initialized = True
         if callback:
             callback()
         self._tcp_loop.run_in_executor(None, self._tcp_loop.run_forever)
 
     def _init(self):
-        self._client, status = self._tcp_loop.run_until_complete(
-            self._tcp_loop.create_connection(lambda: TcpProtocol(self),
-                                             host=self._host,
-                                             port=self._port))
-        _LOGGER.debug("Connection started.")
+        for i in range(0, MAX_CONNECTION_ATTEMPTS):
+            try:
+                self._transport, protocol = self._tcp_loop.run_until_complete(
+                    self._tcp_loop.create_connection(lambda: TcpProtocol(self),
+                                                     host=self._host,
+                                                     port=self._port))
+                _LOGGER.debug("Connection started.")
+                break
+            except ConnectionRefusedError as e:
+                _LOGGER.warning(
+                    "Unable to connect due to %s. Trying again in %d seconds, "
+                    "%d attempts remaining.",
+                    e, CONNECTION_ATTEMPT_DELAY, MAX_CONNECTION_ATTEMPTS - i)
+                time.sleep(CONNECTION_ATTEMPT_DELAY)
+        else:
+            _LOGGER.error("Unable to connect! Giving up.")
+            self.shutdown()
 
     def init(self, callback: callable = None):
         _LOGGER.debug("Starting connection...")
@@ -49,8 +61,7 @@ class TcpAdapter(AbstractCecAdapter):
         return task
 
     def shutdown(self):
-        if self._client:
-            self._client.close()
+        self._initialized = False
         if self._transport:
             self._transport.close()
 
@@ -78,7 +89,7 @@ class TcpAdapter(AbstractCecAdapter):
         self.transmit(CecCommand(CMD_STANDBY))
 
     def transmit(self, command: CecCommand):
-        self._client.write(("%s\n" % command.raw).encode())
+        self._transport.write(("%s\n" % command.raw).encode())
 
     def set_command_callback(self, callback):
         self._command_callback = callback
@@ -121,14 +132,16 @@ class TcpProtocol(asyncio.Protocol):
 
     def eof_received(self):
         self._adapter.shutdown()
-        self._adapter._initialized = False
 
     def connection_lost(self, exc):
         self._adapter.shutdown()
-        self._adapter._initialized = False
+        _LOGGER.warning("Connection lost. Trying to reconnect...")
+        self._adapter._tcp_loop.stop()
+        self._adapter.init()
 
 
 def main():
+    """For testing purpose"""
     tcp_adapter = TcpAdapter("192.168.1.3", name="HASS", activate_source=False)
     hdmi_network = HDMINetwork(tcp_adapter)
     hdmi_network.start()
