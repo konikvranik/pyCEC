@@ -21,7 +21,7 @@ class CecAdapter(AbstractCecAdapter):
         self._cecconfig = cec.libcec_configuration()
         if monitor_only is not None:
             self._cecconfig.bMonitorOnly = 1 if monitor_only else 0
-        self._cecconfig.strDeviceName = name
+        self._cecconfig.strDeviceName = name[:13]
         if activate_source is not None:
             self._cecconfig.bActivateSource = 1 if activate_source else 0
         self._cecconfig.deviceTypes.Add(device_type)
