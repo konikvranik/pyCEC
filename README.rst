@@ -22,7 +22,7 @@ can access the system module, by either symlinking it or using the
 ``--system-site-packages`` flag.
 
 .. [1] \:bulb: When using ``pyCEC`` as a network client, ``libcec`` is not needed.
-.. [2] \:warning: Do not use ``pip3 install cec``. This will fail. Compile ``libcec`` instead.
+.. [2] \:warning: Do not use ``pip3 install cec``. This will fail. `Compile <https://github.com/Pulse-Eight/libcec#supported-platforms>`__ ``libcec`` instead.
 
 running server
 --------------
