@@ -1,7 +1,7 @@
 |Build Status| |CodeShip| |Code Climate| |Test Coverage| |Issue Count|
 |Coverage Status|
 
-pyCEC
+``pyCEC``
 =====
 
 Purpose of this project is to provide object API to libcec for
@@ -16,8 +16,8 @@ TCP <=> HDMI bridge to control HDMI devices over TCP network as a
 `libcec <https://github.com/Pulse-Eight/libcec>`__ must be installed [2]_ for
 this module to work in direct mode. Follow the installation instructions
 for your environment, provided at the link.  ``libcec`` installs Python 3
-bindings by default as a system Python module. If you are running pyCEC in a `Python virtual
-environment </getting-started/installation-virtualenv/>`__, make sure it
+bindings by default as a system Python module. If you are running ``pyCEC`` in a *Python virtual
+environment*, make sure it
 can access the system module, by either symlinking it or using the
 ``--system-site-packages`` flag.
 
@@ -27,11 +27,11 @@ can access the system module, by either symlinking it or using the
 running server
 --------------
 
-You can run pyCEC server which will provide bridge between HDMI CEC port
+You can run ``pyCEC`` server which will provide bridge between HDMI CEC port
 and TCP network by exexcuting ``python3 -m pycec``. Server will bind to
 default port ``9526`` on all interfaces.
 
-Then you can connect by client part of pyCEC without need of libcec or
+Then you can connect by client part of ``pyCEC`` without need of libcec or
 HDMI port on client's machine. Just use ``TcpAdapter`` instead of
 ``CecAdapter``.
 
