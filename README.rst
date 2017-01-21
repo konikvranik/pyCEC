@@ -22,7 +22,9 @@ environment </getting-started/installation-virtualenv/>`__, make sure it
 can access the system module, by either symlinking it or using the
 ``--system-site-packages`` flag.
 
-\:bulb: When using as network client, libcec is not needed.
+\:bulb: When using ``pyCEC`` as a network client, ``libcec`` is not needed.
+
+\:warning: Do not use ``pip3 install cec``. This will fail. Compile ``libcec`` instead.
 
 running server
 --------------
