@@ -1,0 +1,4 @@
+include README.rst
+include LICENSE
+graft pycec
+recursive-exclude * *.py[co]
