@@ -12,3 +12,10 @@ pyCEC
 
 Purpose of this project is to provide object API to libcec for home-assistant hdmi_cec module as [primary goal](https://github.com/konikvranik/pyCEC/projects/1)
 and to make TCP <=> HDMI bridge to control HDMI devices over TCP network as a [secondary goal](https://github.com/konikvranik/pyCEC/projects/2).
+
+
+`libcec` dependency
+-----------------
+
+[libcec](https://github.com/Pulse-Eight/libcec) must be installed for this component to work. Follow the installation instructions for your environment, provided at the link. `libcec` installs Python 3 bindings by default as a system Python module. If you are running Home Assistant in a [Python virtual environment](/getting-started/installation-virtualenv/), make sure it can access the system module, by either symlinking it or using the `--system-site-packages` flag.
+
