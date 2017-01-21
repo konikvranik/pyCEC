@@ -12,7 +12,7 @@ REQUIRES = [
 
 setup(
     name="pyCEC",
-    version="0.4.6",
+    version="0.4.7",
     author="Petr Vraník",
     author_email="hpa@suteren.net",
     description=(
