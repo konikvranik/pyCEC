@@ -35,6 +35,8 @@ Then you can connect by client part of ``pyCEC`` without need of libcec or
 HDMI port on client's machine. Just use ``TcpAdapter`` instead of
 ``CecAdapter``.
 
+You can also connect to ``9526`` by `NetCat <https://www.wikiwand.com/en/Netcat>`_ and send CEC commands directly.
+
 .. |Build Status| image:: https://travis-ci.org/konikvranik/pyCEC.svg?branch=dev
    :target: https://travis-ci.org/konikvranik/pyCEC
 .. |CodeShip| image:: https://codeship.com/projects/7e847d60-a377-0134-e221-0a9a91773973/status?branch=dev
