@@ -168,7 +168,7 @@ class HDMIDevice:
 
     @asyncio.coroutine
     def async_turn_on(self):  # pragma: no cover
-        command = CecCommand(0x44, self.logical_address, att=[0x40])
+        command = CecCommand(0x44, self.logical_address, att=[0x6d])
         yield from self.async_send_command(command)
 
     def turn_off(self):  # pragma: no cover
@@ -177,6 +177,14 @@ class HDMIDevice:
     @asyncio.coroutine
     def async_turn_off(self):  # pragma: no cover
         command = CecCommand(0x44, self.logical_address, att=[0x6c])
+        yield from self.async_send_command(command)
+
+    def toggle(self):  # pragma: no cover
+        self._loop.create_task(self.async_toggle())
+
+    @asyncio.coroutine
+    def async_toggle(self):  # pragma: no cover
+        command = CecCommand(0x44, self.logical_address, att=[0x40])
         yield from self.async_send_command(command)
 
     @property
