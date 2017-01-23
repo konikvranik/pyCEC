@@ -214,7 +214,8 @@ class HDMIDevice:
 
     def _update_physical_address(self, command):
         self._physical_address = PhysicalAddress(command.att[0:2])
-        self._type = command.att[2]
+        if len(command.att) > 2:
+            self._type = command.att[2]
 
     def _update_audio_status(self, command):
         self._mute_status = bool(command.att[0] & 0x80)
