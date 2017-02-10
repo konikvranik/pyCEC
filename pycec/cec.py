@@ -40,6 +40,7 @@ class CecAdapter(AbstractCecAdapter):
             self._io_executor, self._adapter.PollDevice, device)
 
     def shutdown(self):
+        self._io_executor.shutdown()
         self._adapter.Close()
 
     def get_logical_address(self):

@@ -4,6 +4,8 @@ from functools import reduce
 from multiprocessing import Queue
 from typing import List
 
+import time
+
 from pycec import _LOGGER
 from pycec.commands import CecCommand
 from pycec.const import CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES, \
@@ -124,6 +126,7 @@ class HDMIDevice:
         self._type = int()
         self._update_callback = None
         self._status = None
+        self._task = None
 
     @property
     def logical_address(self) -> int:
@@ -229,6 +232,14 @@ class HDMIDevice:
         self._mute_status = bool(command.att[0] & 0x80)
         self._mute_value = command.att[0] & 0x7f
         pass
+
+    @property
+    def task(self):
+        return self._task
+
+    @task.setter
+    def task(self, task):
+        self._task = task
 
     @asyncio.coroutine
     def async_run(self):
@@ -337,7 +348,8 @@ class HDMINetwork:
             if self._device_added_callback:
                 self._loop.call_soon_threadsafe(self._device_added_callback,
                                                 self._devices[device])
-            self._loop.create_task(self._devices[device].async_run())
+            task = self._loop.create_task(self._devices[device].async_run())
+            self._devices[device].task = task
             _LOGGER.debug("Found device %d", device)
         elif not self._device_status[device] and device in self._devices:
             self.get_device(device).stop()
@@ -452,15 +464,14 @@ class HDMINetwork:
     def stop(self):
         _LOGGER.debug("HDMI network shutdown.")  # pragma: no cover
         self._running = False
-        for d in self.devices:
+        for d in self._devices.values():
             d.stop()
-        self._adapter.shutdown()
         if self._managed_loop:
-            _LOGGER.debug("Stopping HDMI loop.")  # pragma: no cover
             self._loop.stop()
-            _LOGGER.debug("Cleanup loop")  # pragma: no cover
-            asyncio.sleep(3, loop=self._loop)
+            while self._loop.is_running():
+                time.sleep(.1)
             self._loop.close()
+        self._adapter.shutdown()
         _LOGGER.info("HDMI network stopped.")  # pragma: no cover
 
     def set_command_callback(self, callback):
