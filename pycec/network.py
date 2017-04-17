@@ -10,7 +10,7 @@ from pycec import _LOGGER
 from pycec.commands import CecCommand
 from pycec.const import CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES, \
     CMD_ACTIVE_SOURCE, CMD_STREAM_PATH, ADDR_BROADCAST, CMD_DECK_STATUS, \
-    CMD_AUDIO_STATUS
+    CMD_AUDIO_STATUS, TYPE_TV
 from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR
 
 DEFAULT_SCAN_INTERVAL = 30
@@ -171,7 +171,10 @@ class HDMIDevice:
 
     @asyncio.coroutine
     def async_turn_on(self):  # pragma: no cover
-        command = CecCommand(0x44, self.logical_address, att=[0x6d])
+        if self.logical_address == TYPE_TV:
+            command = CecCommand(0x04, self.logical_address)
+        else:
+            command = CecCommand(0x44, self.logical_address, att=[0x6d])
         yield from self.async_send_command(command)
 
     def turn_off(self):  # pragma: no cover
@@ -179,7 +182,7 @@ class HDMIDevice:
 
     @asyncio.coroutine
     def async_turn_off(self):  # pragma: no cover
-        command = CecCommand(0x44, self.logical_address, att=[0x6c])
+        command = CecCommand(0x36, self.logical_address)
         yield from self.async_send_command(command)
 
     def toggle(self):  # pragma: no cover
