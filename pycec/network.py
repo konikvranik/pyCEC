@@ -101,10 +101,15 @@ class AbstractCecAdapter:
 class HDMIDevice:
     def __init__(self, logical_address: int, network=None,
                  update_period=DEFAULT_UPDATE_PERIOD,
-                 loop=None):
+                 loop=None, network_name=None):
         self._loop = loop
         self._logical_address = logical_address
-        self.name = "hdmi_%x" % logical_address
+        if network_name is not None:
+            name_prefix = "%s_%s" % (network_name.replace(" ", "_").lower(),
+                                     "hdmi")
+        else:
+            name_prefix = "%s" % ("hdmi")
+        self.name = "%s_%x" % (name_prefix, logical_address)
         self._physical_address = None
         self._power_status = int()
         self._audio_status = int()
@@ -127,6 +132,7 @@ class HDMIDevice:
         self._update_callback = None
         self._status = None
         self._task = None
+        self._network_name = network_name
 
     @property
     def logical_address(self) -> int:
@@ -189,6 +195,10 @@ class HDMIDevice:
     def async_toggle(self):  # pragma: no cover
         command = CecCommand(0x44, self.logical_address, att=[0x40])
         yield from self.async_send_command(command)
+
+    @property
+    def network_name(self):
+        return self._network_name
 
     @property
     def type(self):
@@ -298,7 +308,8 @@ class HDMIDevice:
 
 class HDMINetwork:
     def __init__(self, adapter: AbstractCecAdapter,
-                 scan_interval=DEFAULT_SCAN_INTERVAL, loop=None):
+                 scan_interval=DEFAULT_SCAN_INTERVAL, loop=None,
+                 name=None):
         self._running = False
         self._device_status = dict()
         self._managed_loop = loop is None
@@ -317,6 +328,7 @@ class HDMINetwork:
         self._device_added_callback = None
         self._initialized_callback = None
         self._device_removed_callback = None
+        self._name = name
 
     @property
     def initialized(self):
@@ -344,7 +356,8 @@ class HDMINetwork:
     def _after_polled(self, device, task):
         self._device_status[device] = task.result()
         if self._device_status[device] and device not in self._devices:
-            self._devices[device] = HDMIDevice(device, self, loop=self._loop)
+            self._devices[device] = HDMIDevice(device, self, loop=self._loop,
+                                               network_name=self._name)
             if self._device_added_callback:
                 self._loop.call_soon_threadsafe(self._device_added_callback,
                                                 self._devices[device])
