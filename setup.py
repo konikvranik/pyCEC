@@ -7,7 +7,7 @@ PACKAGES = find_packages(exclude=['tests', 'tests.*', 'build'])
 
 REQUIRES = [
     # 'cec',
-    'typing'
+    'typing;python_version<"3.5"'
 ]
 
 setup(
