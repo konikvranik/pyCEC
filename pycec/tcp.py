@@ -137,6 +137,7 @@ class TcpProtocol(asyncio.Protocol):
     def connection_lost(self, exc):
         _LOGGER.warning("Connection lost. Trying to reconnect...")
         self._initialized = False
+        self._adapter.set_transport = None
         self._adapter._tcp_loop.stop()
         self._adapter.init()
 
