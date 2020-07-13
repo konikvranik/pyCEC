@@ -32,9 +32,9 @@ class TcpAdapter(AbstractCecAdapter):
         if self._transport:
             _LOGGER.debug("New client: %s", self._transport)
             self._initialized = True
-            if callback:
-                callback()
             self._tcp_loop.run_in_executor(None, self._tcp_loop.run_forever)
+        if callback:
+            callback()
 
     def _init(self):
         for i in range(0, MAX_CONNECTION_ATTEMPTS):
@@ -143,7 +143,7 @@ class TcpProtocol(asyncio.Protocol):
 
 def main():
     """For testing purpose"""
-    tcp_adapter = TcpAdapter("192.168.1.3", name="HASS", activate_source=False)
+    tcp_adapter = TcpAdapter("192.168.1.5", name="HASS", activate_source=False)
     hdmi_network = HDMINetwork(tcp_adapter)
     hdmi_network.start()
     while True:
