@@ -45,7 +45,7 @@ class TcpAdapter(AbstractCecAdapter):
                                                      port=self._port))
                 _LOGGER.debug("Connection started.")
                 break
-            except ConnectionRefusedError as e:
+            except (ConnectionRefusedError, RuntimeError) as e:
                 _LOGGER.warning(
                     "Unable to connect due to %s. Trying again in %d seconds, "
                     "%d attempts remaining.",
