@@ -29,11 +29,12 @@ class TcpAdapter(AbstractCecAdapter):
         self._activate_source = activate_source
 
     def _after_init(self, callback, f):
-        _LOGGER.debug("New client: %s", self._transport)
-        self._initialized = True
-        if callback:
-            callback()
-        self._tcp_loop.run_in_executor(None, self._tcp_loop.run_forever)
+        if self._transport:
+            _LOGGER.debug("New client: %s", self._transport)
+            self._initialized = True
+            if callback:
+                callback()
+            self._tcp_loop.run_in_executor(None, self._tcp_loop.run_forever)
 
     def _init(self):
         for i in range(0, MAX_CONNECTION_ATTEMPTS):
