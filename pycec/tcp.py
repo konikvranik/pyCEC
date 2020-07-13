@@ -78,7 +78,7 @@ class TcpAdapter(AbstractCecAdapter):
                 return True
             if self._loop.time() > (req + 5):
                 return False
-            asyncio.sleep(.1, loop=self._loop)
+            time.sleep(.1)
 
     def poll_device(self, device):
         return self._loop.run_in_executor(None, self._poll_device, device)
