@@ -63,8 +63,9 @@ class TcpAdapter(AbstractCecAdapter):
 
     def shutdown(self):
         self._initialized = False
-        if self._transport:
+        if self._transport and not self._transport.is_closing():
             self._transport.close()
+        self._transport = None
 
     def _poll_device(self, device):
         req = self._loop.time()
@@ -136,8 +137,7 @@ class TcpProtocol(asyncio.Protocol):
 
     def connection_lost(self, exc):
         _LOGGER.warning("Connection lost. Trying to reconnect...")
-        self._initialized = False
-        self._adapter.set_transport = None
+        self._adapter.shutdown()
         self._adapter._tcp_loop.stop()
         self._adapter.init()
 
