@@ -20,15 +20,15 @@ jobs:
           pip install -r test_requirements.txt
           pip install coveralls==2.1.2
       - name: Run Tests
-        run: |
-          pytest -vvv --cov=pycec tests/
-          coverage run --source=pycec setup.py test
+        run: pytest -vvv --cov=pycec tests/
       - name: Upload Coverage
         run: coveralls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_FLAG_NAME: ${{ matrix.test-name }}-${{ matrix.python-version }}
           COVERALLS_PARALLEL: true
+      - name: Test Build
+        run: python setup.py sdist
 
   style:
     runs-on: ubuntu-latest
