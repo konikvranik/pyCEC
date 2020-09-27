@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 from setuptools import setup, find_packages
+import os
 
-PACKAGES = find_packages(exclude=['tests', 'tests.*', 'build'])
+this_dir = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(this_dir, "README.rst"), "r") as f:
+    long_description = f.read()
 
-REQUIRES = [
-    # 'cec',
-    'typing;python_version<"3.5"'
-]
+PACKAGES = find_packages(exclude=["tests", "tests.*", "build"])
 
 setup(
     name="pyCEC",
@@ -16,26 +16,31 @@ setup(
     author="Petr Vraník",
     author_email="hpa@suteren.net",
     description=(
-        "Provide HDMI CEC devices as objects," +
-        " especially for use with Home Assistant"),
+        "Provide HDMI CEC devices as objects,"
+        " especially for use with Home Assistant"
+    ),
     license="MIT",
     keywords="cec hdmi home-assistant",
     url="https://github.com/konikvranik/pycec/",
     packages=PACKAGES,
-    install_requires=REQUIRES,
-    long_description='README.rst',
-    test_suite='tests',
+    install_requires=[],
+    long_description=long_description,
+    test_suite="tests",
     classifiers=[
         "Development Status :: 4 - Beta",
         "Topic :: Utilities",
         "Topic :: Home Automation",
         "Topic :: Multimedia",
         "License :: OSI Approved :: MIT License",
-        'Programming Language :: Python :: 3.4',
+        "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
     ],
     entry_points={
-        'console_scripts': [
-            'pycec=pycec.__main__:main',
+        "console_scripts": [
+            "pycec=pycec.__main__:main",
         ],
     },
 )
