@@ -1,1 +1,2 @@
-typing;python_version<"3.5"
+pytest==6.1.0
+pytest-cov==2.10.1

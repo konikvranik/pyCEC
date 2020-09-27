@@ -1,8 +1,7 @@
-|Build Status| |CodeShip| |Code Climate| |Test Coverage| |Issue Count|
-|Coverage Status|
+|Build Status| |PyPi Version| |Issue Count| |Coverage Status|
 
 ``pyCEC``
-=====
+=========
 
 Purpose of this project is to provide object API to libcec for
 home-assistant hdmi\_cec module as `primary
@@ -11,7 +10,7 @@ TCP <=> HDMI bridge to control HDMI devices over TCP network as a
 `secondary goal <https://github.com/konikvranik/pyCEC/projects/2>`__.
 
 ``libcec`` dependency [1]_
----------------------
+--------------------------
 
 `libcec <https://github.com/Pulse-Eight/libcec>`__ must be installed [2]_ for
 this module to work in direct mode. Follow the installation instructions
@@ -37,15 +36,11 @@ HDMI port on client's machine. Just use ``TcpAdapter`` instead of
 
 You can also connect to ``9526`` by `NetCat <https://www.wikiwand.com/en/Netcat>`_ and send CEC commands directly.
 
-.. |Build Status| image:: https://travis-ci.org/konikvranik/pyCEC.svg?branch=dev
-   :target: https://travis-ci.org/konikvranik/pyCEC
-.. |CodeShip| image:: https://codeship.com/projects/7e847d60-a377-0134-e221-0a9a91773973/status?branch=dev
-   :target: https://app.codeship.com/projects/190270
-.. |Code Climate| image:: https://codeclimate.com/github/konikvranik/pyCEC/badges/gpa.svg
-   :target: https://codeclimate.com/github/konikvranik/pyCEC
-.. |Test Coverage| image:: https://codeclimate.com/github/konikvranik/pyCEC/badges/coverage.svg
-   :target: https://codeclimate.com/github/konikvranik/pyCEC/coverage
-.. |Issue Count| image:: https://codeclimate.com/github/konikvranik/pyCEC/badges/issue_count.svg
-   :target: https://codeclimate.com/github/konikvranik/pyCEC
-.. |Coverage Status| image:: https://coveralls.io/repos/github/konikvranik/pyCEC/badge.svg?branch=dev
-   :target: https://coveralls.io/github/konikvranik/pyCEC?branch=dev
+.. |PyPi Version| image:: https://img.shields.io/pypi/v/pyCEC
+   :target: https://pypi.org/project/pyCEC/
+.. |Build Status| image:: https://github.com/konikvranik/pyCEC/workflows/Tests/badge.svg
+   :target: https://github.com/konikvranik/pyCEC/actions
+.. |Issue Count| image:: https://img.shields.io/github/issues-raw/konikvranik/pyCEC
+   :target: https://github.com/konikvranik/pyCEC/issues
+.. |Coverage Status| image:: https://img.shields.io/coveralls/github/konikvranik/pyCEC
+   :target: https://coveralls.io/github/konikvranik/pyCEC
