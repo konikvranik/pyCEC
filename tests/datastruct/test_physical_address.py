@@ -1,3 +1,4 @@
+import pytest
 from pycec.network import PhysicalAddress
 
 
@@ -53,3 +54,8 @@ def test_str():
     assert ("%s" % pa) == "0.0.0.0"
     pa = PhysicalAddress("00:10")
     assert ("%s" % pa) == "0.0.1.0"
+
+
+def test_raises():
+    with pytest.raises(AttributeError):
+        PhysicalAddress([0] * 8)

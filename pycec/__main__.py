@@ -12,13 +12,12 @@ from . import _LOGGER
 from .network import HDMINetwork
 
 
-@asyncio.coroutine
-def async_show_devices(network, loop):
+async def async_show_devices(network, loop):
     while True:
         for d in network.devices:
             _LOGGER.debug("Present device %s", d)
             yield
-        yield from asyncio.sleep(10, loop=loop)
+        await asyncio.sleep(10, loop=loop)
 
 
 def main():
