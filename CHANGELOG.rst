@@ -5,6 +5,26 @@ Change Log
 *************
 Added
 =====
+
+Changed
+=======
+
+Deprecated
+==========
+
+Removed
+=======
+
+Fixed
+=====
+
+Security
+========
+
+`0.5.0`_ 2020-10-04
+*******************
+Added
+=====
 - Added a changelog.
 - Added Python 3.8 testing.
 
@@ -12,9 +32,6 @@ Changed
 =======
 - Updated PyPi classifiers.
 - Updated asyncio syntax to use ``await`` and ``async def``.
-
-Deprecated
-==========
 
 Removed
 =======
@@ -26,14 +43,12 @@ Fixed
 - Added a missing ``await`` for an ``asyncio.sleep``.
 - Fixed long_description field for PyPi releases, the README will now render.
 
-Security
-========
-
 `0.4.14`_ 2020-09-27
 ********************
 Changed
 =======
 - Removed `typing` requirement.
 
-.. _Unreleased: https://github.com/konikvranik/pyCEC/compare/v0.4.14..HEAD
+.. _Unreleased: https://github.com/konikvranik/pyCEC/compare/v0.5.0..HEAD
+.. _0.5.0: https://github.com/konikvranik/pyCEC/releases/tag/v0.5.0
 .. _0.4.14: https://github.com/konikvranik/pyCEC/releases/tag/v0.4.14

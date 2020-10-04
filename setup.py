@@ -12,7 +12,7 @@ PACKAGES = find_packages(exclude=["tests", "tests.*", "build"])
 
 setup(
     name="pyCEC",
-    version="0.4.14",
+    version="0.5.0",
     author="Petr Vraník",
     author_email="hpa@suteren.net",
     description=(
