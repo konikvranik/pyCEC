@@ -21,6 +21,12 @@ Fixed
 Security
 ========
 
+`0.5.1`_ 2020-10-24
+*******************
+Fixed
+=====
+- Fixed a ``TypeError`` exception when using the pyCEC server.
+
 `0.5.0`_ 2020-10-04
 *******************
 Added
@@ -49,6 +55,7 @@ Changed
 =======
 - Removed `typing` requirement.
 
-.. _Unreleased: https://github.com/konikvranik/pyCEC/compare/v0.5.0..HEAD
+.. _Unreleased: https://github.com/konikvranik/pyCEC/compare/v0.5.1..HEAD
+.. _0.5.1: https://github.com/konikvranik/pyCEC/releases/tag/v0.5.1
 .. _0.5.0: https://github.com/konikvranik/pyCEC/releases/tag/v0.5.0
 .. _0.4.14: https://github.com/konikvranik/pyCEC/releases/tag/v0.4.14
