@@ -3,8 +3,12 @@ import functools
 import logging
 import time
 
-from pycec.commands import CecCommand, KeyPressCommand, KeyReleaseCommand, \
-    PollCommand
+from pycec.commands import (
+    CecCommand,
+    KeyPressCommand,
+    KeyReleaseCommand,
+    PollCommand,
+)
 from pycec.const import CMD_STANDBY, KEY_POWER
 from pycec.network import AbstractCecAdapter, HDMINetwork
 
@@ -16,8 +20,9 @@ _LOGGER = logging.getLogger(__name__)
 
 # pragma: no cover
 class TcpAdapter(AbstractCecAdapter):
-    def __init__(self, host, port=DEFAULT_PORT, name=None,
-                 activate_source=None):
+    def __init__(
+        self, host, port=DEFAULT_PORT, name=None, activate_source=None
+    ):
         super().__init__()
         self._polling = dict()
         self._command_callback = None
@@ -40,16 +45,22 @@ class TcpAdapter(AbstractCecAdapter):
         for i in range(0, MAX_CONNECTION_ATTEMPTS):
             try:
                 self._transport, protocol = self._tcp_loop.run_until_complete(
-                    self._tcp_loop.create_connection(lambda: TcpProtocol(self),
-                                                     host=self._host,
-                                                     port=self._port))
+                    self._tcp_loop.create_connection(
+                        lambda: TcpProtocol(self),
+                        host=self._host,
+                        port=self._port,
+                    )
+                )
                 _LOGGER.debug("Connection started.")
                 break
             except (ConnectionRefusedError, RuntimeError) as e:
                 _LOGGER.warning(
                     "Unable to connect due to %s. Trying again in %d seconds, "
                     "%d attempts remaining.",
-                    e, CONNECTION_ATTEMPT_DELAY, MAX_CONNECTION_ATTEMPTS - i)
+                    e,
+                    CONNECTION_ATTEMPT_DELAY,
+                    MAX_CONNECTION_ATTEMPTS - i,
+                )
                 time.sleep(CONNECTION_ATTEMPT_DELAY)
         else:
             _LOGGER.error("Unable to connect! Giving up.")
@@ -79,13 +90,13 @@ class TcpAdapter(AbstractCecAdapter):
                 return True
             if self._loop.time() > (req + 5):
                 return False
-            time.sleep(.1)
+            time.sleep(0.1)
 
     def poll_device(self, device):
         return self._loop.run_in_executor(None, self._poll_device, device)
 
     def get_logical_address(self):
-        return 0xf
+        return 0xF
 
     def standby_devices(self):
         self.transmit(CecCommand(CMD_STANDBY))
@@ -105,7 +116,7 @@ class TcpAdapter(AbstractCecAdapter):
 
 
 class TcpProtocol(asyncio.Protocol):
-    buffer = ''
+    buffer = ""
 
     def __init__(self, adapter: TcpAdapter):
         self._adapter = adapter
@@ -118,17 +129,20 @@ class TcpProtocol(asyncio.Protocol):
     def data_received(self, data: bytes):
         self.buffer += bytes.decode(data)
         for line in self.buffer.splitlines(keepends=True):
-            if line.count('\n'):
+            if line.count("\n"):
                 line = line.rstrip()
-                _LOGGER.debug("Received %s from %s", line,
-                              self.transport.get_extra_info('peername'))
+                _LOGGER.debug(
+                    "Received %s from %s",
+                    line,
+                    self.transport.get_extra_info("peername"),
+                )
                 if len(line) == 2:
                     cmd = CecCommand(line)
                     if cmd.src in self._adapter._polling:
                         del self._adapter._polling[cmd.src]
                 else:
                     self._adapter._command_callback("<< " + line)
-                self.buffer = ''
+                self.buffer = ""
             else:
                 self.buffer = line
 
@@ -154,7 +168,7 @@ def main():
         time.sleep(7)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Configure logging
     _LOGGER.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
@@ -167,16 +181,17 @@ if __name__ == '__main__':
             datefmt=None,
             reset=True,
             log_colors={
-                'DEBUG': 'cyan',
-                'INFO': 'green',
-                'WARNING': 'yellow',
-                'ERROR': 'red',
-                'CRITICAL': 'red',
-            }
+                "DEBUG": "cyan",
+                "INFO": "green",
+                "WARNING": "yellow",
+                "ERROR": "red",
+                "CRITICAL": "red",
+            },
         )
     except ImportError:
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
 
     ch.setFormatter(formatter)
     _LOGGER.addHandler(ch)

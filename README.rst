@@ -1,4 +1,4 @@
-|Build Status| |PyPi Version| |Issue Count| |Coverage Status|
+|Build Status| |PyPi Version| |Issue Count| |Coverage Status| |Black|
 
 ``pyCEC``
 =========
@@ -36,6 +36,9 @@ HDMI port on client's machine. Just use ``TcpAdapter`` instead of
 
 You can also connect to ``9526`` by `NetCat <https://www.wikiwand.com/en/Netcat>`_ and send CEC commands directly.
 
+
+.. |Black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :target: https://github.com/psf/black
 .. |PyPi Version| image:: https://img.shields.io/pypi/v/pyCEC
    :target: https://pypi.org/project/pyCEC/
 .. |Build Status| image:: https://github.com/konikvranik/pyCEC/workflows/Tests/badge.svg

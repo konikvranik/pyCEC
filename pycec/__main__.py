@@ -28,42 +28,51 @@ def main():
 
     transports = set()
     loop = asyncio.get_event_loop()
-    network = HDMINetwork(CecAdapter("pyCEC", activate_source=False),
-                          loop=loop)
+    network = HDMINetwork(
+        CecAdapter("pyCEC", activate_source=False), loop=loop
+    )
 
     class CECServerProtocol(asyncio.Protocol):
         transport = None
-        buffer = ''
+        buffer = ""
 
         def connection_made(self, transport):
-            _LOGGER.info("Connection opened by %s",
-                         transport.get_extra_info('peername'))
+            _LOGGER.info(
+                "Connection opened by %s", transport.get_extra_info("peername")
+            )
             self.transport = transport
             transports.add(transport)
 
         def data_received(self, data):
             self.buffer += bytes.decode(data)
             for line in self.buffer.splitlines(keepends=True):
-                if line.endswith('\n'):
+                if line.endswith("\n"):
                     line = line.rstrip()
                     if len(line) == 2:
-                        _LOGGER.info("Received poll %s from %s", line,
-                                     self.transport.get_extra_info('peername'))
+                        _LOGGER.info(
+                            "Received poll %s from %s",
+                            line,
+                            self.transport.get_extra_info("peername"),
+                        )
                         d = CecCommand(line).dst
                         t = network._adapter.poll_device(d)
-                        t.add_done_callback(
-                            functools.partial(_after_poll, d))
+                        t.add_done_callback(functools.partial(_after_poll, d))
                     else:
-                        _LOGGER.info("Received command %s from %s", line,
-                                     self.transport.get_extra_info('peername'))
+                        _LOGGER.info(
+                            "Received command %s from %s",
+                            line,
+                            self.transport.get_extra_info("peername"),
+                        )
                         network.send_command(CecCommand(line))
-                    self.buffer = ''
+                    self.buffer = ""
                 else:
                     self.buffer = line
 
         def connection_lost(self, exc):
-            _LOGGER.info("Connection with %s lost",
-                         self.transport.get_extra_info('peername'))
+            _LOGGER.info(
+                "Connection with %s lost",
+                self.transport.get_extra_info("peername"),
+            )
             transports.remove(self.transport)
 
     def _after_poll(d, f):
@@ -73,8 +82,9 @@ def main():
 
     def _send_command_to_tcp(command):
         for t in transports:
-            _LOGGER.info("Sending %s to %s", command,
-                         t.get_extra_info('peername'))
+            _LOGGER.info(
+                "Sending %s to %s", command, t.get_extra_info("peername")
+            )
             t.write(str.encode("%s\n" % command.raw))
 
     network.set_command_callback(_send_command_to_tcp)
@@ -82,11 +92,14 @@ def main():
 
     _LOGGER.info("CEC initialized... Starting server.")
     # Each client connection will create a new protocol instance
-    coro = loop.create_server(CECServerProtocol, config['DEFAULT']['host'],
-                              int(config['DEFAULT']['port']))
+    coro = loop.create_server(
+        CECServerProtocol,
+        config["DEFAULT"]["host"],
+        int(config["DEFAULT"]["port"]),
+    )
     server = loop.run_until_complete(coro)
     # Serve requests until Ctrl+C is pressed
-    _LOGGER.info('Serving on {}'.format(server.sockets[0].getsockname()))
+    _LOGGER.info("Serving on {}".format(server.sockets[0].getsockname()))
     if _LOGGER.level >= logging.DEBUG:
         loop.create_task(async_show_devices(network, loop))
     try:
@@ -102,27 +115,53 @@ def main():
 
 def configure():
     parser = OptionParser()
-    parser.add_option("-i", "--interface", dest="host", action="store",
-                      type="string", default=DEFAULT_HOST,
-                      help=("Address of interface to bind to. Default is '%s'."
-                            % DEFAULT_HOST))
-    parser.add_option("-p", "--port", dest="port", action="store", type="int",
-                      default=DEFAULT_PORT,
-                      help=("Port to bind to. Default is '%s'."
-                            % DEFAULT_PORT))
-    parser.add_option("-v", "--verbose", dest="verbose", action="count",
-                      default=0, help="Increase verbosity.")
-    parser.add_option("-q", "--quiet", dest="quiet", action="count",
-                      default=0, help="Decrease verbosity.")
+    parser.add_option(
+        "-i",
+        "--interface",
+        dest="host",
+        action="store",
+        type="string",
+        default=DEFAULT_HOST,
+        help=(
+            "Address of interface to bind to. Default is '%s'." % DEFAULT_HOST
+        ),
+    )
+    parser.add_option(
+        "-p",
+        "--port",
+        dest="port",
+        action="store",
+        type="int",
+        default=DEFAULT_PORT,
+        help=("Port to bind to. Default is '%s'." % DEFAULT_PORT),
+    )
+    parser.add_option(
+        "-v",
+        "--verbose",
+        dest="verbose",
+        action="count",
+        default=0,
+        help="Increase verbosity.",
+    )
+    parser.add_option(
+        "-q",
+        "--quiet",
+        dest="quiet",
+        action="count",
+        default=0,
+        help="Decrease verbosity.",
+    )
     (options, args) = parser.parse_args()
     script_dir = os.path.dirname(os.path.realpath(__file__))
     config = configparser.ConfigParser()
-    config['DEFAULT'] = {'host': options.host, 'port': options.port,
-                         'logLevel': logging.INFO + (
-                             (options.quiet - options.verbose) * 10)}
-    paths = ['/etc/pycec.conf', script_dir + '/pycec.conf']
-    if 'HOME' in os.environ:
-        paths.append(os.environ['HOME'] + '/.pycec')
+    config["DEFAULT"] = {
+        "host": options.host,
+        "port": options.port,
+        "logLevel": logging.INFO + ((options.quiet - options.verbose) * 10),
+    }
+    paths = ["/etc/pycec.conf", script_dir + "/pycec.conf"]
+    if "HOME" in os.environ:
+        paths.append(os.environ["HOME"] + "/.pycec")
     config.read(paths)
 
     return config
@@ -130,9 +169,9 @@ def configure():
 
 def setup_logger(config):
     try:
-        log_level = int(config['DEFAULT']['logLevel'])
+        log_level = int(config["DEFAULT"]["logLevel"])
     except ValueError:
-        log_level = config['DEFAULT']['logLevel']
+        log_level = config["DEFAULT"]["logLevel"]
     _LOGGER.setLevel(log_level)
     ch = logging.StreamHandler()
     ch.setLevel(log_level)
@@ -144,16 +183,17 @@ def setup_logger(config):
             datefmt=None,
             reset=True,
             log_colors={
-                'DEBUG': 'cyan',
-                'INFO': 'green',
-                'WARNING': 'yellow',
-                'ERROR': 'red',
-                'CRITICAL': 'red',
-            }
+                "DEBUG": "cyan",
+                "INFO": "green",
+                "WARNING": "yellow",
+                "ERROR": "red",
+                "CRITICAL": "red",
+            },
         )
     except ImportError:
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
     ch.setFormatter(formatter)
     _LOGGER.addHandler(ch)
 

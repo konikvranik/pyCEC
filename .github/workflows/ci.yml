@@ -44,3 +44,5 @@ jobs:
           pip install -r lint_requirements.txt
       - name: Run Flake8
         run: flake8 .
+      - name: Run black
+        run: black --check .
