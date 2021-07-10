@@ -91,7 +91,7 @@ class TcpAdapter(AbstractCecAdapter):
         self.transmit(CecCommand(CMD_STANDBY))
 
     def transmit(self, command: CecCommand):
-        self._transport.write(("%s\n" % command.raw).encode())
+        self._transport.write(("%s\r\n" % command.raw).encode())
 
     def set_command_callback(self, callback):
         self._command_callback = callback
@@ -118,7 +118,7 @@ class TcpProtocol(asyncio.Protocol):
     def data_received(self, data: bytes):
         self.buffer += bytes.decode(data)
         for line in self.buffer.splitlines(keepends=True):
-            if line.count('\n'):
+            if line.count('\n') or line.count('\r'):
                 line = line.rstrip()
                 _LOGGER.debug("Received %s from %s", line,
                               self.transport.get_extra_info('peername'))
