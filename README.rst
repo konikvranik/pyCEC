@@ -36,6 +36,26 @@ HDMI port on client's machine. Just use ``TcpAdapter`` instead of
 
 You can also connect to ``9526`` by `NetCat <https://www.wikiwand.com/en/Netcat>`_ and send CEC commands directly.
 
+
+home-assistant with multiple on/off switches
+--------------------------------------------
+
+You can not only add a `hdmi_cec` instance to home-assistant with specified `host` for remote control of your TV, but also add switches for multiple TVs to turn on or off:
+```
+switch:
+  - platform: telnet
+    switches:
+      some_device_id:
+        name: "Some Device Name"
+        resource: xxx.xxx.xxx.xxx
+        port: 9526
+        command_on: '10:04'
+        command_off: '10:36'
+        command_state: '10:8f'
+        value_template: '{{ value == "01:90:00" }}'
+        timeout: 1
+```
+
 .. |PyPi Version| image:: https://img.shields.io/pypi/v/pyCEC
    :target: https://pypi.org/project/pyCEC/
 .. |Build Status| image:: https://github.com/konikvranik/pyCEC/workflows/Tests/badge.svg
