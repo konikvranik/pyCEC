@@ -41,7 +41,8 @@ class CecAdapter(AbstractCecAdapter):
 
     def shutdown(self):
         self._io_executor.shutdown()
-        self._adapter.Close()
+        if self._adapter:
+            self._adapter.Close()
 
     def get_logical_address(self):
         return self._adapter.GetLogicalAddresses().primary
