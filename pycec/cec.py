@@ -87,4 +87,4 @@ class CecAdapter(AbstractCecAdapter):
             else:
                 _LOGGER.error("failed to open a connection to the CEC adapter")
         if callback:
-            callback(self)
+            callback()
