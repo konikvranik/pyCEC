@@ -12,7 +12,7 @@ PACKAGES = find_packages(exclude=["tests", "tests.*", "build"])
 
 setup(
     name="pyCEC",
-    version="0.5.0",
+    version="0.5.1",
     author="Petr Vraník",
     author_email="hpa@suteren.net",
     description=(
@@ -33,10 +33,10 @@ setup(
         "Topic :: Multimedia",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
     ],
     entry_points={"console_scripts": ["pycec=pycec.__main__:main"]},
 )

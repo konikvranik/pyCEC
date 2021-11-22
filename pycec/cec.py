@@ -49,7 +49,8 @@ class CecAdapter(AbstractCecAdapter):
 
     def shutdown(self):
         self._io_executor.shutdown()
-        self._adapter.Close()
+        if self._adapter:
+            self._adapter.Close()
 
     def get_logical_address(self):
         return self._adapter.GetLogicalAddresses().primary
@@ -104,4 +105,4 @@ class CecAdapter(AbstractCecAdapter):
             else:
                 _LOGGER.error("failed to open a connection to the CEC adapter")
         if callback:
-            callback(self)
+            callback()
