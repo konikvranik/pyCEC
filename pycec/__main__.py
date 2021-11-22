@@ -43,7 +43,7 @@ def main():
         def data_received(self, data):
             self.buffer += bytes.decode(data)
             for line in self.buffer.splitlines(keepends=True):
-                if line.endswith('\n'):
+                if line.endswith('\r') or line.endswith('\n'):
                     line = line.rstrip()
                     if len(line) == 2:
                         _LOGGER.info("Received poll %s from %s", line,
@@ -74,7 +74,7 @@ def main():
         for t in transports:
             _LOGGER.info("Sending %s to %s", command,
                          t.get_extra_info('peername'))
-            t.write(str.encode("%s\n" % command.raw))
+            t.write(str.encode("%s\r\n" % command.raw))
 
     network.set_command_callback(_send_command_to_tcp)
     loop.run_until_complete(network.async_init())
