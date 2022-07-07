@@ -41,7 +41,7 @@ def test_devices():
     # network._adapter.set_command_callback(network.command_callback)
     network.init()
     network.scan()
-    loop.run_until_complete(asyncio.sleep(0.1, loop))
+    loop.run_until_complete(asyncio.sleep(0.1))
     loop.stop()
     loop.run_forever()
     for i in [0, 1, 3, 5]:
@@ -85,7 +85,7 @@ def test_scan():
     # network._adapter.set_command_callback(network.command_callback)
     network.init()
     network.scan()
-    loop.run_until_complete(asyncio.sleep(0.1, loop))
+    loop.run_until_complete(asyncio.sleep(0.1))
     loop.stop()
     loop.run_forever()
 

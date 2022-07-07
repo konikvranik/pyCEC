@@ -16,7 +16,7 @@ async def async_show_devices(network, loop):
     while True:
         for d in network.devices:
             _LOGGER.debug("Present device %s", d)
-        await asyncio.sleep(10, loop=loop)
+        await asyncio.sleep(10)
 
 
 def main():
