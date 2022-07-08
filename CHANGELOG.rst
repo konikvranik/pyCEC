@@ -1,27 +1,12 @@
 Change Log
 ##########
 
-`Unreleased`_
+`0.5.2`_ 2022-07-08
 *************
 Added
 =====
 - Added Python 3.9 support.
-
-Changed
-=======
-
-Deprecated
-==========
-
-Removed
-=======
-- Drop Python 3.5 support (EOL).
-
-Fixed
-=====
-
-Security
-========
+- Added Python 3.10 support.
 
 `0.5.1`_ 2020-10-24
 *******************
