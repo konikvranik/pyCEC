@@ -169,26 +169,23 @@ class HDMIDevice:
     def turn_on(self):  # pragma: no cover
         self._loop.create_task(self.async_turn_on())
 
-    @asyncio.coroutine
-    def async_turn_on(self):  # pragma: no cover
+    async def async_turn_on(self):  # pragma: no cover
         command = CecCommand(0x44, self.logical_address, att=[0x6d])
-        yield from self.async_send_command(command)
+        await self.async_send_command(command)
 
     def turn_off(self):  # pragma: no cover
         self._loop.create_task(self.async_turn_off())
 
-    @asyncio.coroutine
-    def async_turn_off(self):  # pragma: no cover
+    async def async_turn_off(self):  # pragma: no cover
         command = CecCommand(0x44, self.logical_address, att=[0x6c])
-        yield from self.async_send_command(command)
+        await self.async_send_command(command)
 
     def toggle(self):  # pragma: no cover
         self._loop.create_task(self.async_toggle())
 
-    @asyncio.coroutine
-    def async_toggle(self):  # pragma: no cover
+    async def async_toggle(self):  # pragma: no cover
         command = CecCommand(0x44, self.logical_address, att=[0x40])
-        yield from self.async_send_command(command)
+        await self.async_send_command(command)
 
     @property
     def type(self):
@@ -241,36 +238,34 @@ class HDMIDevice:
     def task(self, task):
         self._task = task
 
-    @asyncio.coroutine
-    def async_run(self):
+    async def async_run(self):
         _LOGGER.debug("Starting device %d", self.logical_address)
         while not self._stop:
             for prop in UPDATEABLE:
                 if not self._stop:
-                    yield from self.async_request_update(prop[0])
+                    await self.async_request_update(prop[0])
             start_time = self._loop.time()
             while not self._stop and self._loop.time() <= (
-                        start_time + self._update_period):
-                yield from asyncio.sleep(.3, loop=self._loop)
+                start_time + self._update_period
+            ):
+                await asyncio.sleep(0.3)
         _LOGGER.info("HDMI device %s stopped.", self)  # pragma: no cover
 
     def stop(self):  # pragma: no cover
         _LOGGER.debug("HDMI device %s stopping", self)
         self._stop = True
 
-    @asyncio.coroutine
-    def async_request_update(self, cmd: int):
+    async def async_request_update(self, cmd: int):
         self._updates[cmd] = False
         command = CecCommand(cmd)
-        yield from self.async_send_command(command)
+        await self.async_send_command(command)
 
     def send_command(self, command):
         self._loop.create_task(self.async_send_command(command))
 
-    @asyncio.coroutine
-    def async_send_command(self, command: CecCommand):
+    async def async_send_command(self, command: CecCommand):
         command.dst = self._logical_address
-        yield from self._network.async_send_command(command)
+        await self._network.async_send_command(command)
 
     def active_source(self):
         self._loop.create_task(
@@ -305,7 +300,7 @@ class HDMINetwork:
         if self._managed_loop:
             self._loop = asyncio.new_event_loop()
         else:
-            _LOGGER.warn("Be aware! Network is using shared event loop!")
+            _LOGGER.warning("Be aware! Network is using shared event loop!")
             self._loop = loop
         self._adapter = adapter
         self._adapter.set_event_loop(self._loop)
@@ -325,8 +320,7 @@ class HDMINetwork:
     def init(self):
         self._loop.create_task(self.async_init())
 
-    @asyncio.coroutine
-    def async_init(self):
+    async def async_init(self):
         _LOGGER.debug("initializing")  # pragma: no cover
         _LOGGER.debug("setting callback")  # pragma: no cover
         self._adapter.set_command_callback(self.command_callback)
@@ -335,7 +329,7 @@ class HDMINetwork:
         self._running = True
         while not (task.done() or task.cancelled()) and self._running:
             _LOGGER.debug("Init pending - %s", task)  # pragma: no cover
-            yield from asyncio.sleep(1, loop=self._loop)
+            await asyncio.sleep(1)
         _LOGGER.debug("Init done")  # pragma: no cover
 
     def scan(self):
@@ -358,8 +352,7 @@ class HDMINetwork:
                                                 self._devices[device])
             del (self._devices[device])
 
-    @asyncio.coroutine
-    def async_scan(self):
+    async def async_scan(self):
         _LOGGER.info("Looking for new devices...")
         if not self.initialized:
             _LOGGER.error("Device not initialized!!!")  # pragma: no cover
@@ -367,13 +360,11 @@ class HDMINetwork:
         for d in range(15):
             task = self._adapter.poll_device(d)
             task.add_done_callback(functools.partial(self._after_polled, d))
-            yield
 
     def send_command(self, command):
         self._loop.create_task(self.async_send_command(command))
 
-    @asyncio.coroutine
-    def async_send_command(self, command):
+    async def async_send_command(self, command):
         if isinstance(command, str):
             command = CecCommand(command)
         _LOGGER.debug("<< %s", command)
@@ -384,27 +375,24 @@ class HDMINetwork:
     def standby(self):
         self._loop.create_task(self.async_standby())
 
-    @asyncio.coroutine
-    def async_standby(self):
+    async def async_standby(self):
         _LOGGER.debug("Queuing system standby")  # pragma: no cover
         self._loop.call_soon_threadsafe(self._adapter.standby_devices)
 
     def power_on(self):
         self._loop.create_task(self.async_power_on())
 
-    @asyncio.coroutine
-    def async_power_on(self):
+    async def async_power_on(self):
         _LOGGER.debug("Queuing power on")  # pragma: no cover
         self._loop.call_soon_threadsafe(self._adapter.power_on_devices)
 
     def active_source(self, source: PhysicalAddress):
         self._loop.create_task(self.async_active_source(source))
 
-    @asyncio.coroutine
-    def async_active_source(self, addr: PhysicalAddress):
-        yield from self.async_send_command(
+    async def async_active_source(self, addr: PhysicalAddress):
+        await self.async_send_command(
             CecCommand(CMD_ACTIVE_SOURCE, ADDR_BROADCAST, att=addr.asattr))
-        yield from self.async_send_command(
+        await self.async_send_command(
             CecCommand(CMD_STREAM_PATH, ADDR_BROADCAST, att=addr.asattr))
 
     @property
@@ -414,8 +402,7 @@ class HDMINetwork:
     def get_device(self, i) -> HDMIDevice:
         return self._devices.get(i, None)
 
-    @asyncio.coroutine
-    def async_watch(self, loop=None):
+    async def async_watch(self, loop=None):
         _LOGGER.debug("Start watching...")  # pragma: no cover
         if loop is None:
             loop = self._loop
@@ -423,15 +410,17 @@ class HDMINetwork:
         while self._running:
             if self.initialized:
                 _LOGGER.debug("Scanning...")  # pragma: no cover
-                yield from self.async_scan()
+                await self.async_scan()
                 _LOGGER.debug("Sleep...")  # pragma: no cover
                 start_time = self._loop.time()
-                while self._loop.time() <= (
-                            start_time + self._scan_interval) and self._running:
-                    yield from asyncio.sleep(.3, loop=loop)
+                while (
+                    self._loop.time() <= (start_time + self._scan_interval)
+                    and self._running
+                ):
+                    await asyncio.sleep(0.3)
             else:
                 _LOGGER.warning("Not initialized. Waiting for init.")
-                yield from asyncio.sleep(1, loop=loop)
+                await asyncio.sleep(1)
         _LOGGER.info("No watching anymore")
 
     def start(self):
