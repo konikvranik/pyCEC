@@ -1,4 +1,4 @@
-FROM resin/armv7hf-debian
+FROM balenalib/armv7hf-debian-golang
 
 VOLUME /tmp/pycec
 
