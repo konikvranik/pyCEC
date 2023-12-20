@@ -113,6 +113,8 @@ class HDMIDevice:
         self._menu_language = str()
         self._osd_name = str()
         self._audio_mode_status = int()
+        self._volume_status = int()
+        self._mute_status = False
         self._deck_status = int()
         self._tuner_status = int()
         self._menu_status = int()
@@ -197,6 +199,14 @@ class HDMIDevice:
             DEVICE_TYPE_NAMES[self.type] if self.type in range(6) else
             DEVICE_TYPE_NAMES[2])
 
+    @property
+    def mute_status(self) -> bool:
+        return self._mute_status
+
+    @property
+    def volume_status(self) -> int:
+        return self._volume_status
+
     def update_callback(self, command: CecCommand):
         result = False
         for prop in filter(lambda x: x[1] == command.cmd, UPDATEABLE):
@@ -227,8 +237,7 @@ class HDMIDevice:
 
     def _update_audio_status(self, command):
         self._mute_status = bool(command.att[0] & 0x80)
-        self._mute_value = command.att[0] & 0x7f
-        pass
+        self._volume_status = command.att[0] & 0x7f
 
     @property
     def task(self):
