@@ -237,7 +237,13 @@ class HDMIDevice:
 
     def _update_audio_status(self, command):
         self._mute_status = bool(command.att[0] & 0x80)
-        self._volume_status = command.att[0] & 0x7f
+        raw_volume_status = command.att[0] & 0x7f
+        if raw_volume_status == 0x7f:
+            # Volume is unknown
+            self._updates[CMD_AUDIO_STATUS[0]] = False
+        else:
+            # Valid volumes cover a range of 0-100, just clamp invalid values
+            self._volume_status = min(raw_volume_status, 100)
 
     @property
     def task(self):
