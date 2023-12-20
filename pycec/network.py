@@ -120,7 +120,7 @@ class HDMIDevice:
         self._timer_cleared_status = int()
         self._timer_status = int()
         self._network = network
-        self._updates = dict()
+        self._updates = {cmd: False for cmd in UPDATEABLE}
         self._stop = False
         self._update_period = update_period
         self._type = int()
