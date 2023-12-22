@@ -113,6 +113,8 @@ class HDMIDevice:
         self._menu_language = str()
         self._osd_name = str()
         self._audio_mode_status = int()
+        self._volume_status = int()
+        self._mute_status = False
         self._deck_status = int()
         self._tuner_status = int()
         self._menu_status = int()
@@ -120,7 +122,7 @@ class HDMIDevice:
         self._timer_cleared_status = int()
         self._timer_status = int()
         self._network = network
-        self._updates = dict()
+        self._updates = {cmd: False for cmd in UPDATEABLE}
         self._stop = False
         self._update_period = update_period
         self._type = int()
@@ -197,6 +199,14 @@ class HDMIDevice:
             DEVICE_TYPE_NAMES[self.type] if self.type in range(6) else
             DEVICE_TYPE_NAMES[2])
 
+    @property
+    def mute_status(self) -> bool:
+        return self._mute_status
+
+    @property
+    def volume_status(self) -> int:
+        return self._volume_status
+
     def update_callback(self, command: CecCommand):
         result = False
         for prop in filter(lambda x: x[1] == command.cmd, UPDATEABLE):
@@ -227,8 +237,13 @@ class HDMIDevice:
 
     def _update_audio_status(self, command):
         self._mute_status = bool(command.att[0] & 0x80)
-        self._mute_value = command.att[0] & 0x7f
-        pass
+        raw_volume_status = command.att[0] & 0x7f
+        if raw_volume_status == 0x7f:
+            # Volume is unknown
+            self._updates[CMD_AUDIO_STATUS[0]] = False
+        else:
+            # Valid volumes cover a range of 0-100, just clamp invalid values
+            self._volume_status = min(raw_volume_status, 100)
 
     @property
     def task(self):
