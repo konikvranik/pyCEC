@@ -26,6 +26,7 @@ VENDORS = {0x0020C7: 'Akai',
            0x000039: 'Toshiba',
            0x000CE7: 'Toshiba',
            0x6B746D: 'Vizio',
+           0x00199D: 'Vizio',
            0x00A0DE: 'Yamaha',
            0: 'Unknown'}
 
