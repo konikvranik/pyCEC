@@ -1,6 +1,17 @@
 Change Log
 ##########
 
+`0.6.0`_ 2024-01-27
+*************
+Added
+=====
+- Publicly expose mute and volume status
+- New vendor ID mapping for Vizio
+
+Changed
+=======
+- Base Docker image on balenalib instead of resin
+
 `0.5.2`_ 2022-07-08
 *************
 Added
