@@ -1,209 +1,166 @@
 # -*- coding: utf-8 -*-
 """
-Kodi plugin implementující CEC funkcionalitu jako služba
+Hlavní vstupní bod CEC TCP serveru
 """
+import asyncio
 import os
 import sys
-import json
-import time
 import xbmc
 import xbmcaddon
-import asyncio
-from asyncio import futures
-from threading import Thread
+import xbmcvfs
 
-# Přidání cesty k lib adresáři pro import knihoven
-addon_dir = os.path.dirname(os.path.abspath(__file__))
-lib_dir = os.path.join(addon_dir, 'lib')
-sys.path.insert(0, lib_dir)
+from pycec.server import CECServerProtocol, CECServer
+from pycec.cec import CecAdapter
+from pycec.network import HDMINetwork, AbstractCecAdapter
 
-# Import pycec knihovny
-from pycec.commands import CecCommand, PollCommand
-from pycec.const import CMD_POLL
-from pycec.network import AbstractCecAdapter, HDMINetwork
+# Získání instance addonu a cest
+ADDON = xbmcaddon.Addon()
+ADDON_ID = ADDON.getAddonInfo('id')
+ADDON_PATH = xbmcvfs.translatePath(ADDON.getAddonInfo('path'))
+
+# Přidání cest k potřebným knihovnám
+LIB_DIR = os.path.join(ADDON_PATH, 'lib')
+RESOURCES_LIB_DIR = os.path.join(ADDON_PATH, 'resources', 'lib')
+
+# Přidání cest do systémové cesty pro import
+sys.path.insert(0, LIB_DIR)
+sys.path.insert(0, RESOURCES_LIB_DIR)
+
 
 # Logger pro Kodi
 def log(msg, level=xbmc.LOGINFO):
-    xbmc.log("[service.cec.sender] {}".format(msg), level)
+    xbmc.log("[{}] {}".format(ADDON_ID, msg), level)
 
-# Třída implementující CEC adapter pro Kodi
-class KodiCecAdapter(AbstractCecAdapter):
-    def __init__(self):
+class KodiAdapter(AbstractCecAdapter):
+    def __init__(self, name: str = None, monitor_only: bool = None,
+                 activate_source: bool = None,
+                 device_type=ADDR_RECORDINGDEVICE1):
         super().__init__()
-        self._initialized = False
-        self._command_callback = None
-        self._polling = {}  # Pro ukládání polling požadavků
-        
-    def init(self, callback=None):
-        """Inicializuje CEC adapter"""
-        self._initialized = True
+        self._adapter = None
+        self._io_executor = ThreadPoolExecutor(1)
+        import cec
+        self._cecconfig = cec.libcec_configuration()
+        if monitor_only is not None:
+            self._cecconfig.bMonitorOnly = 1 if monitor_only else 0
+        self._cecconfig.strDeviceName = name[:13]
+        if activate_source is not None:
+            self._cecconfig.bActivateSource = 1 if activate_source else 0
+        self._cecconfig.deviceTypes.Add(device_type)
+
+    def set_command_callback(self, callback):
+        self._cecconfig.SetKeyPressCallback(
+            lambda key, delay: callback(KeyPressCommand(key).raw))
+        self._cecconfig.SetCommandCallback(callback)
+
+    def standby_devices(self):
+        self._loop.run_in_executor(self._io_executor,
+                                   self._adapter.StandbyDevices)
+
+    def poll_device(self, device):
+        return self._loop.run_in_executor(
+            self._io_executor, self._adapter.PollDevice, device)
+
+    def shutdown(self):
+        self._io_executor.shutdown()
+        if self._adapter:
+            self._adapter.Close()
+
+    def get_logical_address(self):
+        return self._adapter.GetLogicalAddresses().primary
+
+    def power_on_devices(self):
+        self._loop.run_in_executor(self._io_executor,
+                                   self._adapter.PowerOnDevices)
+
+    def transmit(self, command: CecCommand):
+        self._loop.run_in_executor(
+            self._io_executor, self._adapter.Transmit,
+            self._adapter.CommandFromString(command.raw))
+
+    def init(self, callback: callable = None):
+        return self._loop.run_in_executor(self._io_executor, self._init,
+                                          callback)
+
+    def _init(self, callback: callable = None):
+        import cec
+        if not self._cecconfig.clientVersion:
+            self._cecconfig.clientVersion = cec.LIBCEC_VERSION_CURRENT
+        _LOGGER.debug("Initializing CEC...")
+        adapter = cec.ICECAdapter.Create(self._cecconfig)
+        _LOGGER.debug("Created adapter")
+        a = None
+        adapters = adapter.DetectAdapters()
+        for a in adapters:
+            _LOGGER.info("found a CEC adapter:")
+            _LOGGER.info("port:     " + a.strComName)
+            _LOGGER.info("vendor:   " + (
+                VENDORS[a.iVendorId] if a.iVendorId in VENDORS else hex(
+                    a.iVendorId)))
+            _LOGGER.info("product:  " + hex(a.iProductId))
+            a = a.strComName
+        if a is None:
+            _LOGGER.warning("No adapters found")
+        else:
+            if adapter.Open(a):
+                _LOGGER.info("connection opened")
+                self._adapter = adapter
+                self._initialized = True
+            else:
+                _LOGGER.error("failed to open a connection to the CEC adapter")
         if callback:
             callback()
-        return asyncio.Future()
-        
-    def poll_device(self, device):
-        """Ověří, zda zařízení existuje"""
-        result = futures.Future()
-        
-        # Implementace pollování přes Kodi JSON-RPC API
-        request = {
-            "jsonrpc": "2.0",
-            "method": "CEC.GetDeviceList",
-            "id": 1
-        }
-        response = json.loads(xbmc.executeJSONRPC(json.dumps(request)))
-        
-        if "result" in response and "devices" in response["result"]:
-            devices = response["result"]["devices"]
-            for dev in devices:
-                if dev["logicaladdress"] == device:
-                    result.set_result(True)
-                    log(f"Device {device} found via Kodi CEC", xbmc.LOGDEBUG)
-                    return result
-        
-        # Pokud nebyl nalezen v Kodi seznamu, použijeme polling přes pycec
-        request = self._loop.time()
-        poll_bucket = self._polling.get(device, set())
-        poll_bucket.add(request)
-        self._polling.update({device: poll_bucket})
-        self.transmit(PollCommand(device))
-        
-        # Spustíme kontrolu v separátním vlákně
-        def check_poll():
-            start_time = time.time()
-            while time.time() < (start_time + 5):  # 5 sekund timeout
-                if request not in self._polling.get(device, set()):
-                    result.set_result(True)
-                    return
-                time.sleep(0.1)
-            result.set_result(False)
-        
-        Thread(target=check_poll).start()
-        return result
-        
-    def get_logical_address(self):
-        """Vrací logickou adresu Kodi zařízení"""
-        request = {
-            "jsonrpc": "2.0",
-            "method": "CEC.GetActiveSource",
-            "id": 1
-        }
-        response = json.loads(xbmc.executeJSONRPC(json.dumps(request)))
-        
-        if "result" in response and "logicaladdress" in response["result"]:
-            return response["result"]["logicaladdress"]
-        return 1  # Výchozí hodnota pro Playback Device 1
-        
-    def transmit(self, command: CecCommand):
-        """Odešle CEC příkaz přes Kodi CEC API"""
-        log(f"Sending CEC command: {command.raw}", xbmc.LOGDEBUG)
-        
-        # Pro poll příkaz použijeme Kodi API
-        if command.cmd == CMD_POLL:
-            request = {
-                "jsonrpc": "2.0",
-                "method": "CEC.SendCommand",
-                "params": {
-                    "destination": command.dst, 
-                    "command": "poll"
-                },
-                "id": 1
-            }
-            xbmc.executeJSONRPC(json.dumps(request))
-            return
-            
-        # Pro ostatní příkazy pošleme raw command
-        request = {
-            "jsonrpc": "2.0",
-            "method": "CEC.SendCommand",
-            "params": {
-                "command": command.raw
-            },
-            "id": 1
-        }
-        xbmc.executeJSONRPC(json.dumps(request))
-        
-    def standby_devices(self):
-        """Pošle všem zařízením příkaz k uspání"""
-        request = {
-            "jsonrpc": "2.0",
-            "method": "CEC.Standby",
-            "id": 1
-        }
-        xbmc.executeJSONRPC(json.dumps(request))
-        
-    def power_on_devices(self):
-        """Zapne všechna zařízení"""
-        request = {
-            "jsonrpc": "2.0",
-            "method": "CEC.Activate",
-            "id": 1
-        }
-        xbmc.executeJSONRPC(json.dumps(request))
-        
-    def set_command_callback(self, callback):
-        """Nastaví callback pro přijaté CEC příkazy"""
-        self._command_callback = callback
-        
-    def shutdown(self):
-        """Ukončení adapteru"""
-        self._initialized = False
 
+class CecServerService(xbmc.Monitor):
+    """
+    Služba Kodi pro spuštění TCP serveru s CEC funkcionalitou
+    """
 
-class KodiCecServer(xbmc.Monitor):
     def __init__(self):
-        super(KodiCecServer, self).__init__()
-        self.loop = asyncio.new_event_loop()
-        self.adapter = KodiCecAdapter()
-        self.adapter.set_event_loop(self.loop)
-        self.network = HDMINetwork(self.adapter, loop=self.loop)
-        self.connections = []
-        
-        # Spustíme asynchronní loop v samostatném vlákně
-        self.thread = Thread(target=self._run_loop)
-        self.thread.daemon = True
-        self.thread.start()
-        
-        # Inicializace a spuštění HDMINetwork
-        self.network.set_command_callback(self._handle_cec_command)
-        self.loop.call_soon_threadsafe(self.network.init)
-        log("CEC Server initialized", xbmc.LOGINFO)
+        super(CecServerService, self).__init__()
+        self.server = None
 
-    def _run_loop(self):
-        """Spouští event loop v samostatném vlákně"""
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_forever()
-        
-    def _handle_cec_command(self, command):
-        """Zpracování přijatých CEC příkazů"""
-        log(f"Received CEC command: {command}", xbmc.LOGINFO)
-        # Zde bychom mohli implementovat další zpracování příkazů
-        
-    def onNotification(self, sender, method, data):
-        """Zpracování Kodi notifikací"""
-        if method == "System.OnQuit":
-            self.shutdown()
-            
+    def start(self):
+        """Spustí TCP server"""
+        # Získání nastavení
+        host = ADDON.getSetting('host') or '0.0.0.0'
+        port = int(ADDON.getSetting('port') or 9998)
+
+        log(f"Starting CEC TCP Server on {host}:{port}")
+
+        try:
+            self.server = CECServer()
+            self.server.start(host, port)
+            log("CEC TCP Server started successfully")
+        except Exception as e:
+            log(f"Failed to start CEC TCP Server: {str(e)}", xbmc.LOGERROR)
+
+    def onSettingsChanged(self):
+        """Reaguje na změnu nastavení"""
+        log("Settings changed, restarting server")
+        if self.server:
+            self.server.stop()
+        self.start()
+
     def shutdown(self):
-        """Ukončí server a uvolní prostředky"""
-        log("Shutting down CEC Server", xbmc.LOGINFO)
-        self.network.stop()
-        self.loop.call_soon_threadsafe(self.loop.stop)
-        self.thread.join(timeout=1.0)
+        """Ukončí server"""
+        if self.server:
+            log("Shutting down CEC TCP Server")
+            self.server.stop()
 
 
-# Hlavní spouštěcí bod
-if __name__ == "__main__":
-    addon = xbmcaddon.Addon()
-    log(f"Starting {addon.getAddonInfo('name')} version {addon.getAddonInfo('version')}", xbmc.LOGINFO)
-    
-    server = KodiCecServer()
-    
-    # Hlavní smyčka čekání na ukončení
-    while not server.abortRequested():
-        if server.waitForAbort(1):
+# Hlavní funkce addonu
+if __name__ == '__main__':
+    log(f"Starting {ADDON.getAddonInfo('name')} version {ADDON.getAddonInfo('version')}")
+
+    # Vytvoření a spuštění služby
+    service = CecServerService()
+    service.start()
+
+    # Hlavní smyčka - běží dokud není Kodi ukončeno
+    while not service.abortRequested():
+        if service.waitForAbort(1):
             break
-            
+
     # Ukončení služby
-    server.shutdown()
-    log("CEC Server stopped", xbmc.LOGINFO)
+    service.shutdown()
+    log("CEC TCP Server stopped")

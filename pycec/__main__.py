@@ -1,60 +1,12 @@
 import asyncio
 import configparser
-import functools
 import logging
 import os
-from asyncio import futures, Transport
 from optparse import OptionParser
 
 from pycec import DEFAULT_PORT, DEFAULT_HOST
-from pycec.cec import CecAdapter
-from pycec.commands import CecCommand, PollCommand
+from pycec.server import CECServer
 from . import _LOGGER
-from .network import HDMINetwork
-
-
-class CECServerProtocol(asyncio.Protocol):
-    buffer = ''
-
-    def __init__(self, network: HDMINetwork, connections):
-        self._hdmi_network = network
-        self._connections = connections
-        self._transport: Transport = None
-        super().__init__()
-
-    def connection_made(self, transport):
-        _LOGGER.info("Connection opened by %s", transport.get_extra_info('peername'))
-        self._transport = transport
-        self._connections.add(self)
-
-    def data_received(self, data):
-        self.buffer += bytes.decode(data)
-        for line in self.buffer.splitlines(keepends=True):
-            if line.endswith('\r') or line.endswith('\n'):
-                line = line.rstrip()
-                if len(line) == 2:
-                    _LOGGER.info("Received poll %s from %s", line, self._transport.get_extra_info('peername'))
-                    device = CecCommand(line).dst
-                    t: futures.Future = self._hdmi_network._adapter.poll_device(device)
-                    t.add_done_callback(functools.partial(self._after_poll, device))
-                else:
-                    _LOGGER.info("Received command %s from %s", line, self._transport.get_extra_info('peername'))
-                    self._hdmi_network.send_command(CecCommand(line))
-                self.buffer = ''
-            else:
-                self.buffer = line
-
-    def connection_lost(self, exc):
-        _LOGGER.info("Connection with %s lost", self._transport.get_extra_info('peername'))
-        self._connections.remove(self)
-
-    def _after_poll(self, d, f):
-        if f.result():
-            self.send_command_to_tcp(PollCommand(self._hdmi_network._adapter.get_logical_address(), src=d))
-
-    def send_command_to_tcp(self, command):
-        _LOGGER.info("Sending %s to %s", command, self._transport.get_extra_info('peername'))
-        self._transport.write(str.encode("%s\r\n" % command.raw))
 
 
 def configure():
@@ -121,34 +73,9 @@ def main():
     setup_logger(config)
 
     loop = asyncio.get_event_loop()
-    network = HDMINetwork(CecAdapter("pyCEC", activate_source=False), loop=loop)
-
-    _LOGGER.info("CEC initialized... Starting server.")
-    # Each client connection will create a new protocol instance
-    connections = set()
-
-    def _send_command_to_tcp(command):
-        for c in connections:
-            c.send_command_to_tcp(command)
-
-    network.set_command_callback(_send_command_to_tcp)
-    loop.run_until_complete(network.async_init())
-
-    server = loop.run_until_complete(
-        loop.create_server(lambda: CECServerProtocol(network, connections), config['DEFAULT']['host'],
-                           int(config['DEFAULT']['port'])))
-    # Serve requests until Ctrl+C is pressed
-    _LOGGER.info('Serving on {}'.format(server.sockets[0].getsockname()))
-    if _LOGGER.level >= logging.DEBUG:
-        asyncio.run(async_show_devices(network, loop))
-    try:
-        loop.run_forever()
-    except KeyboardInterrupt:
-        pass
-
-    # Close the server
-    server.close()
-    loop.run_until_complete(server.wait_closed())
+    server = CECServer(loop)
+    loop.run_until_complete(server.start(config['DEFAULT']['host'], int(config['DEFAULT']['port'])))
+    server.stop()
     loop.close()
 
 
