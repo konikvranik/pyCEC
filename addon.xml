@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="service.cec.sender" name="CEC Command Sender" version="1.0.0" provider-name="VášJméno">
+	<requires>
+		<import addon="xbmc.python" version="3.0.0"/>
+	</requires>
+	<extension point="xbmc.service" library="kodi_cec.py" start="startup"/>
+	<extension point="xbmc.addon.metadata">
+		<summary lang="en_GB">Send raw CEC commands to devices</summary>
+		<description lang="en_GB">Allows sending arbitrary CEC commands to connected HDMI devices.</description>
+		<platform>all</platform>
+		<language>en</language>
+		<license>MIT</license>
+	</extension>
+</addon>

@@ -70,16 +70,16 @@ class TcpAdapter(AbstractCecAdapter):
         self._transport = None
 
     def _poll_device(self, device):
-        req = self._loop.time()
+        timestamp = self._loop.time()
         poll_bucket = self._polling.get(device, set())
-        poll_bucket.add(req)
+        poll_bucket.add(timestamp)
         self._polling.update({device: poll_bucket})
         self.transmit(PollCommand(device))
         while True:
-            if req not in self._polling.get(device, set()):
+            if timestamp not in self._polling.get(device, set()):
                 _LOGGER.debug("Found device %d.", device)
                 return True
-            if self._loop.time() > (req + 5):
+            if self._loop.time() > (timestamp + 5):
                 return False
             time.sleep(.1)
 
