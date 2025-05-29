@@ -1,10 +1,10 @@
 import asyncio
 import functools
+import time
+from asyncio import futures, AbstractEventLoop
 from functools import reduce
 from multiprocessing import Queue
 from typing import List
-
-import time
 
 from pycec import _LOGGER
 from pycec.commands import CecCommand
@@ -64,12 +64,12 @@ class PhysicalAddress:
 class AbstractCecAdapter:
     def __init__(self):
         self._initialized = False
-        self._loop = None
+        self._loop: AbstractEventLoop = None
 
     def init(self, callback: callable = None):
         raise NotImplementedError
 
-    def poll_device(self, device):
+    def poll_device(self, device) -> futures.Future:
         raise NotImplementedError
 
     def get_logical_address(self):
@@ -261,7 +261,7 @@ class HDMIDevice:
                     await self.async_request_update(prop[0])
             start_time = self._loop.time()
             while not self._stop and self._loop.time() <= (
-                start_time + self._update_period
+                    start_time + self._update_period
             ):
                 await asyncio.sleep(0.3)
         _LOGGER.info("HDMI device %s stopped.", self)  # pragma: no cover
@@ -429,8 +429,8 @@ class HDMINetwork:
                 _LOGGER.debug("Sleep...")  # pragma: no cover
                 start_time = self._loop.time()
                 while (
-                    self._loop.time() <= (start_time + self._scan_interval)
-                    and self._running
+                        self._loop.time() <= (start_time + self._scan_interval)
+                        and self._running
                 ):
                     await asyncio.sleep(0.3)
             else:
@@ -462,8 +462,7 @@ class HDMINetwork:
             pass
         if not updated:
             if self._command_callback:
-                self._loop.call_soon_threadsafe(
-                    self._command_callback, command)
+                self._loop.call_soon_threadsafe(self._command_callback, command)
 
     def stop(self):
         _LOGGER.debug("HDMI network shutdown.")  # pragma: no cover
