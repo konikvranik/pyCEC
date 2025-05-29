@@ -2,6 +2,7 @@ import asyncio
 import functools
 import logging
 import time
+from asyncio import Transport
 
 from pycec.commands import CecCommand, KeyPressCommand, KeyReleaseCommand, \
     PollCommand
@@ -24,7 +25,7 @@ class TcpAdapter(AbstractCecAdapter):
         self._tcp_loop = asyncio.new_event_loop()
         self._host = host
         self._port = port
-        self._transport = None
+        self._transport: Transport = None
         self._osd_name = name
         self._activate_source = activate_source
 
@@ -63,8 +64,9 @@ class TcpAdapter(AbstractCecAdapter):
 
     def shutdown(self):
         self._initialized = False
-        if self._transport and not self._transport.is_closing():
-            self._transport.close()
+        if self._transport is not None:
+            if not self._transport.is_closing():
+                self._transport.close()
         self._transport = None
 
     def _poll_device(self, device):
@@ -91,7 +93,10 @@ class TcpAdapter(AbstractCecAdapter):
         self.transmit(CecCommand(CMD_STANDBY))
 
     def transmit(self, command: CecCommand):
-        self._transport.write(("%s\r\n" % command.raw).encode())
+        if self._transport is not None:
+            self._transport.write(("%s\r\n" % command.raw).encode())
+        else:
+            _LOGGER.error("Can not transmit command. Transport is not initialized.")
 
     def set_command_callback(self, callback):
         self._command_callback = callback
@@ -100,7 +105,12 @@ class TcpAdapter(AbstractCecAdapter):
         self.transmit(KeyPressCommand(KEY_POWER))
         self.transmit(KeyReleaseCommand())
 
-    def set_transport(self, transport):
+    @property
+    def transport(self):
+        return self._transport
+
+    @transport.setter
+    def transport(self, transport: Transport):
         self._transport = transport
 
 
@@ -109,11 +119,9 @@ class TcpProtocol(asyncio.Protocol):
 
     def __init__(self, adapter: TcpAdapter):
         self._adapter = adapter
-        self.transport = None
 
     def connection_made(self, transport):
-        self.transport = transport
-        self._adapter.set_transport = transport
+        self._adapter.transport = transport
 
     def data_received(self, data: bytes):
         self.buffer += bytes.decode(data)
@@ -121,7 +129,7 @@ class TcpProtocol(asyncio.Protocol):
             if line.count('\n') or line.count('\r'):
                 line = line.rstrip()
                 _LOGGER.debug("Received %s from %s", line,
-                              self.transport.get_extra_info('peername'))
+                              self._adapter.transport.get_extra_info('peername'))
                 if len(line) == 2:
                     cmd = CecCommand(line)
                     if cmd.src in self._adapter._polling:
