@@ -34,7 +34,7 @@ class CECServerProtocol(asyncio.Protocol):
                 self.buffer = line
 
     async def async_send_command(self, device, line):
-        r= await self._hdmi_network._adapter.async_poll_device(device)
+        r = await self._hdmi_network._adapter.async_poll_device(device)
         if r:
             asyncio.get_running_loop().run_in_executor(
                 None, self.send_command_to_tcp, PollCommand(self._hdmi_network._adapter.get_logical_address(), src=device)
@@ -76,7 +76,6 @@ class CECServer:
         self._network.set_command_callback(_send_command_to_tcp)
         if not await self._network.async_init():
             raise Exception("Failed to initialize CEC network.")
-
 
         self._server = await asyncio.get_running_loop().create_server(lambda: CECServerProtocol(self._network, self._connections), host, port)
 

@@ -52,7 +52,7 @@ def initialize_cec():
         else:
             libcec_path = os.path.join(libs_dir, "libcec.so")
 
-        libcec = ctypes.CDLL(libcec_path)
+        ctypes.CDLL(libcec_path)
         print(f"Úspěšně načtena knihovna libcec z {libcec_path}")
         return True
     except Exception as e:

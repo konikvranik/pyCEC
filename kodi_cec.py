@@ -2,6 +2,7 @@
 """
 Hlavní vstupní bod CEC TCP serveru
 """
+import asyncio
 import os
 import sys
 
@@ -48,10 +49,10 @@ class KodiAdapter(AbstractCecAdapter):
         self._cecconfig.SetCommandCallback(callback)
 
     async def async_standby_devices(self):
-        self._loop.run_in_executor(self._io_executor, self._adapter.StandbyDevices)
+        asyncio.get_running_loop().run_in_executor(self._io_executor, self._adapter.StandbyDevices)
 
     async def async_poll_device(self, device):
-        return self._loop.run_in_executor(self._io_executor, self._adapter.PollDevice, device)
+        return asyncio.get_running_loop().run_in_executor(self._io_executor, self._adapter.PollDevice, device)
 
     async def async_shutdown(self):
         self._io_executor.shutdown()
@@ -62,13 +63,13 @@ class KodiAdapter(AbstractCecAdapter):
         return self._adapter.GetLogicalAddresses().primary
 
     async def async_power_on_devices(self):
-        await self._loop.run_in_executor(self._io_executor, self._adapter.PowerOnDevices)
+        await asyncio.get_running_loop().run_in_executor(self._io_executor, self._adapter.PowerOnDevices)
 
     async def async_transmit(self, command: CecCommand):
-        self._loop.run_in_executor(self._io_executor, self._adapter.Transmit, self._adapter.CommandFromString(command.raw))
+        asyncio.get_running_loop().run_in_executor(self._io_executor, self._adapter.Transmit, self._adapter.CommandFromString(command.raw))
 
     async def async_init(self, callback: callable = None):
-        return self._loop.run_in_executor(self._io_executor, self._init, callback)
+        return asyncio.get_running_loop().run_in_executor(self._io_executor, self._init, callback)
 
     def _init(self, callback: callable = None):
         log("Initializing CEC...")
@@ -95,7 +96,7 @@ class CecServerService(xbmc.Monitor):
         log(f"Starting CEC TCP Server on {host}:{port}")
 
         try:
-            self.server = CECServer(loop)
+            self.server = CECServer()
             self.server.start(host, port)
             log("CEC TCP Server started successfully")
         except Exception as e:
