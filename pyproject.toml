@@ -43,6 +43,8 @@ lint = [
     "flake8>=7.0.0",
     "flake8-pyproject>=1.2.3",
     "black>=23.0.0",
+    "flake8-bugbear==20.1.4",
+    "pep8-naming==0.11.1",
 ]
 test = [
     "pytest>=7.0.0",
