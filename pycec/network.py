@@ -441,9 +441,7 @@ class HDMIDevice:
                 if not self._stop:
                     await self.async_request_update(prop[0])
             start_time = self._loop.time()
-            while not self._stop and self._loop.time() <= (
-                    start_time + self._update_period
-            ):
+            while not self._stop and self._loop.time() <= (start_time + self._update_period):
                 await asyncio.sleep(0.3)
         _LOGGER.info("HDMI device %s stopped.", self)  # pragma: no cover
 
@@ -478,7 +476,6 @@ class HDMIDevice:
     @property
     def is_updated(self, cmd):
         return self._updates[cmd]
-
 
     def _update_physical_address(self, command):
         self._physical_address = PhysicalAddress(command.att[0:2])
