@@ -25,7 +25,7 @@ class CecAdapter(AbstractCecAdapter):
             self._cecconfig.bActivateSource = 1 if activate_source else 0
         self._cecconfig.deviceTypes.Add(device_type)
 
-    def set_command_callback(self, callback):
+    def set_on_command_callback(self, callback):
         self._cecconfig.SetKeyPressCallback(
             lambda key, delay: callback(KeyPressCommand(key).raw))
         self._cecconfig.SetCommandCallback(callback)

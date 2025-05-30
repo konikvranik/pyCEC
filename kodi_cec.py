@@ -38,7 +38,7 @@ class KodiAdapter(AbstractCecAdapter):
                  device_type=ADDR_RECORDINGDEVICE1):
         super().__init__()
 
-    def set_command_callback(self, callback):
+    def set_on_command_callback(self, callback):
         self._cecconfig.SetKeyPressCallback(
             lambda key, delay: callback(KeyPressCommand(key).raw))
         self._cecconfig.SetCommandCallback(callback)

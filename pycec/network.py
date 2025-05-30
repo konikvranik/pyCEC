@@ -160,7 +160,7 @@ class AbstractCecAdapter:
         """
         raise NotImplementedError
 
-    def set_command_callback(self, callback):
+    def set_on_command_callback(self, callback):
         """
         Sets the callback function for handling commands. The provided callback function
         will be invoked whenever a command needs to be processed, allowing customization
@@ -384,7 +384,7 @@ class HDMIDevice:
     def volume_status(self) -> int:
         return self._volume_status
 
-    def update_callback(self, command: CecCommand):
+    async def async_update(self, command: CecCommand):
         """
         Updates a component's properties based on a received command. The method verifies
         if the command matches any predefined updatable properties and updates them accordingly.
@@ -568,7 +568,7 @@ class HDMINetwork:
 
     async def async_init(self):
         _LOGGER.debug("initializing")  # pragma: no cover
-        self._adapter.set_command_callback(self.command_callback)
+        self._adapter.set_on_command_callback(self.async_update)
         await self._adapter.async_init(self._initialized_callback)
         self._running = True
         _LOGGER.debug("Init done")  # pragma: no cover
@@ -668,19 +668,15 @@ class HDMINetwork:
                 await asyncio.sleep(1)
         _LOGGER.info("No watching anymore")
 
-    def command_callback(self, raw_command):
-        _LOGGER.debug("%s", raw_command)  # pragma: no cover
-        self._loop.call_soon_threadsafe(self._async_callback, raw_command)
-
-    def _async_callback(self, raw_command):
+    async def async_update(self, raw_command):
         command = CecCommand(raw_command[3:])
         updated = False
         if command.src == 15:
             for i in range(15):
-                updated |= self.get_device(i).update_callback(command)
+                updated |= await self.get_device(i).async_update(command)
                 pass
         elif command.src in self._devices:
-            updated = self.get_device(command.src).update_callback(command)
+            updated = await self.get_device(command.src).async_update(command)
             pass
         if not updated:
             if self._command_callback:
