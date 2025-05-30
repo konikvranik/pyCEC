@@ -1,5 +1,6 @@
 import asyncio
 from asyncio import Transport, Server
+from typing import Coroutine, Any
 
 from pycec import _LOGGER
 from pycec.commands import CecCommand, PollCommand
@@ -28,15 +29,20 @@ class CECServerProtocol(asyncio.Protocol):
                 if len(line) == 2:
                     _LOGGER.info("Received poll %s from %s", line, self._transport.get_extra_info("peername"))
                     device = CecCommand(line).dst
-                    with self._hdmi_network._adapter.async_poll_device(device) as t:
-                        if t:
-                            self.send_command_to_tcp(PollCommand(self._hdmi_network._adapter.get_logical_address(), src=device))
-                        else:
-                            _LOGGER.info("Received command %s from %s", line, self._transport.get_extra_info("peername"))
-                            self._hdmi_network.send_command(CecCommand(line))
-                        self.buffer = ""
+                    asyncio.create_task(self.async_send_command(device, line))
             else:
                 self.buffer = line
+
+    async def async_send_command(self, device, line):
+        r= await self._hdmi_network._adapter.async_poll_device(device)
+        if r:
+            asyncio.get_running_loop().run_in_executor(
+                None, self.send_command_to_tcp, PollCommand(self._hdmi_network._adapter.get_logical_address(), src=device)
+            )
+        else:
+            _LOGGER.info("Received command %s from %s", line, self._transport.get_extra_info("peername"))
+            self._hdmi_network.send_command(CecCommand(line))
+        self.buffer = ""
 
     def connection_lost(self, exc):
         _LOGGER.info("Connection with %s lost", self._transport.get_extra_info("peername"))
@@ -52,14 +58,13 @@ class CECServerProtocol(asyncio.Protocol):
 
 
 class CECServer:
-    def __init__(self, adapter, loop=None):
-        self._loop = loop if loop is not None else asyncio.get_event_loop()
+    def __init__(self, adapter):
         self._adapter = adapter
-        self._network = HDMINetwork(self._adapter, self._loop)
+        self._network = HDMINetwork(self._adapter)
         self._connections = set()
-        self._server: Server = None
+        self._server: Coroutine[Any, Any, Server] = None
 
-    def start(self, host, port):
+    async def async_start(self, host, port) -> Server:
         _LOGGER.info("CEC initialized... Starting server.")
 
         # Each client connection will create a new protocol instance
@@ -69,15 +74,12 @@ class CECServer:
                 c.send_command_to_tcp(command)
 
         self._network.set_command_callback(_send_command_to_tcp)
-        self._loop.run_until_complete(self._network.async_init())
+        if not await self._network.async_init():
+            raise Exception("Failed to initialize CEC network.")
 
-        self._server = self._loop.create_server(lambda: CECServerProtocol(self._network, self._connections), host, port)
+
+        self._server = await asyncio.get_running_loop().create_server(lambda: CECServerProtocol(self._network, self._connections), host, port)
 
         # Serve requests until Ctrl+C is pressed
         _LOGGER.info("Serving on {}".format(self._server.sockets[0].getsockname()))
         return self._server
-
-    def stop(self):
-        # Close the server
-        self._server.close()
-        self._loop.run_until_complete(self._server.wait_closed())

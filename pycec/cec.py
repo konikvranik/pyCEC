@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from concurrent.futures import ThreadPoolExecutor
 
@@ -29,24 +30,24 @@ class CecAdapter(AbstractCecAdapter):
         self._cecconfig.SetCommandCallback(callback)
 
     async def async_standby_devices(self):
-        await self._loop.run_in_executor(self._io_executor, self._adapter.StandbyDevices)
+        await asyncio.get_running_loop().run_in_executor(self._io_executor, self._adapter.StandbyDevices)
 
     async def async_poll_device(self, device):
-        return await self._loop.run_in_executor(self._io_executor, self._adapter.PollDevice, device)
+        return await asyncio.get_running_loop().run_in_executor(self._io_executor, self._adapter.PollDevice, device)
 
     async def async_shutdown(self):
         self._io_executor.shutdown()
         if self._adapter:
-            await self._loop.run_in_executor(None, self._adapter.Close)
+            await asyncio.get_running_loop().run_in_executor(None, self._adapter.Close)
 
     def get_logical_address(self):
         return self._adapter.GetLogicalAddresses().primary
 
     async def async_power_on_devices(self):
-        await self._loop.run_in_executor(self._io_executor, self._adapter.PowerOnDevices)
+        await asyncio.get_running_loop().run_in_executor(self._io_executor, self._adapter.PowerOnDevices)
 
     async def async_transmit(self, command: CecCommand):
-        await self._loop.run_in_executor(self._io_executor, self._adapter.Transmit, self._adapter.CommandFromString(command.raw))
+        await asyncio.get_running_loop().run_in_executor(self._io_executor, self._adapter.Transmit, self._adapter.CommandFromString(command.raw))
 
     async def async_init(self, callback: callable = None):
         import cec
@@ -54,10 +55,10 @@ class CecAdapter(AbstractCecAdapter):
         if not self._cecconfig.clientVersion:
             self._cecconfig.clientVersion = cec.LIBCEC_VERSION_CURRENT
         _LOGGER.debug("Initializing CEC...")
-        adapter = await self._loop.run_in_executor(self._io_executor, cec.ICECAdapter.Create, self._cecconfig)
+        adapter = await asyncio.get_running_loop().run_in_executor(self._io_executor, cec.ICECAdapter.Create, self._cecconfig)
         _LOGGER.debug("Created adapter")
         a = None
-        adapters = await self._loop.run_in_executor(self._io_executor, adapter.DetectAdapters)
+        adapters = await asyncio.get_running_loop().run_in_executor(self._io_executor, adapter.DetectAdapters)
         for a in adapters:
             _LOGGER.info("found a CEC adapter:")
             _LOGGER.info("port:     " + a.strComName)
@@ -67,7 +68,7 @@ class CecAdapter(AbstractCecAdapter):
         if a is None:
             _LOGGER.warning("No adapters found")
         else:
-            if await self._loop.run_in_executor(self._io_executor, adapter.Open, a):
+            if await asyncio.get_running_loop().run_in_executor(self._io_executor, adapter.Open, a):
                 _LOGGER.info("connection opened")
                 self._adapter = adapter
                 self._initialized = True
