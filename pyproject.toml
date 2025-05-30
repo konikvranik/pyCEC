@@ -1,2 +1,45 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyCEC"
+version = "0.6.0"
+description = "Provide HDMI CEC devices as objects, especially for use with Home Assistant"
+authors = [
+    {name = "Petr Vraník", email = "hpa@suteren.net"}
+]
+license = {text = "MIT"}
+readme = "README.rst"
+requires-python = ">=3.7"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Topic :: Utilities",
+    "Topic :: Home Automation",
+    "Topic :: Multimedia",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
+keywords = ["cec", "hdmi", "home-assistant"]
+
+[project.urls]
+Homepage = "https://github.com/konikvranik/pycec/"
+Issues = "https://github.com/konikvranik/pycec/issues"
+
+[project.scripts]
+pycec = "pycec.__main__:main"
+
+[tool.setuptools]
+packages = {find = {exclude = ["tests", "tests.*", "build"]}}
+
+[tool.pytest]
+addopts = "--verbose"
+testpaths = ["tests"]
+norecursedirs = [".git", "testing_config"]
+
 [tool.black]
 line-length = 79
