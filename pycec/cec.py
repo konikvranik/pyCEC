@@ -10,13 +10,12 @@ _LOGGER = logging.getLogger(__name__)
 
 # pragma: no cover
 class CecAdapter(AbstractCecAdapter):
-    def __init__(self, name: str = None, monitor_only: bool = None,
-                 activate_source: bool = None,
-                 device_type=ADDR_RECORDINGDEVICE1):
+    def __init__(self, name: str = None, monitor_only: bool = None, activate_source: bool = None, device_type=ADDR_RECORDINGDEVICE1):
         super().__init__()
         self._adapter = None
         self._io_executor = ThreadPoolExecutor(1)
         import cec
+
         self._cecconfig = cec.libcec_configuration()
         if monitor_only is not None:
             self._cecconfig.bMonitorOnly = 1 if monitor_only else 0
@@ -26,8 +25,7 @@ class CecAdapter(AbstractCecAdapter):
         self._cecconfig.deviceTypes.Add(device_type)
 
     def set_on_command_callback(self, callback):
-        self._cecconfig.SetKeyPressCallback(
-            lambda key, delay: callback(KeyPressCommand(key).raw))
+        self._cecconfig.SetKeyPressCallback(lambda key, delay: callback(KeyPressCommand(key).raw))
         self._cecconfig.SetCommandCallback(callback)
 
     async def async_standby_devices(self):
@@ -48,11 +46,11 @@ class CecAdapter(AbstractCecAdapter):
         await self._loop.run_in_executor(self._io_executor, self._adapter.PowerOnDevices)
 
     async def async_transmit(self, command: CecCommand):
-        await self._loop.run_in_executor(self._io_executor, self._adapter.Transmit,
-                                         self._adapter.CommandFromString(command.raw))
+        await self._loop.run_in_executor(self._io_executor, self._adapter.Transmit, self._adapter.CommandFromString(command.raw))
 
     async def async_init(self, callback: callable = None):
         import cec
+
         if not self._cecconfig.clientVersion:
             self._cecconfig.clientVersion = cec.LIBCEC_VERSION_CURRENT
         _LOGGER.debug("Initializing CEC...")

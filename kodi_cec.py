@@ -65,9 +65,7 @@ class KodiAdapter(AbstractCecAdapter):
         await self._loop.run_in_executor(self._io_executor, self._adapter.PowerOnDevices)
 
     async def async_transmit(self, command: CecCommand):
-        self._loop.run_in_executor(
-            self._io_executor, self._adapter.Transmit, self._adapter.CommandFromString(command.raw)
-        )
+        self._loop.run_in_executor(self._io_executor, self._adapter.Transmit, self._adapter.CommandFromString(command.raw))
 
     async def async_init(self, callback: callable = None):
         return self._loop.run_in_executor(self._io_executor, self._init, callback)

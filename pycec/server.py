@@ -30,13 +30,9 @@ class CECServerProtocol(asyncio.Protocol):
                     device = CecCommand(line).dst
                     with self._hdmi_network._adapter.async_poll_device(device) as t:
                         if t:
-                            self.send_command_to_tcp(
-                                PollCommand(self._hdmi_network._adapter.get_logical_address(), src=device)
-                            )
+                            self.send_command_to_tcp(PollCommand(self._hdmi_network._adapter.get_logical_address(), src=device))
                         else:
-                            _LOGGER.info(
-                                "Received command %s from %s", line, self._transport.get_extra_info("peername")
-                            )
+                            _LOGGER.info("Received command %s from %s", line, self._transport.get_extra_info("peername"))
                             self._hdmi_network.send_command(CecCommand(line))
                         self.buffer = ""
             else:

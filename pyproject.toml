@@ -52,8 +52,8 @@ testpaths = ["tests"]
 norecursedirs = [".git", "testing_config"]
 
 [tool.black]
-line-length = 120
+line-length = 160
 
 [tool.flake8]
-max-line-length = 120
+max-line-length = 160
 exclude = [".venv/", ".git/", "__pycache__/", "*.egg-info"]
