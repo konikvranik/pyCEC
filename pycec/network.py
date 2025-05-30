@@ -75,10 +75,10 @@ class AbstractCecAdapter:
     :type _command_callback: callable or None
     """
 
-    def __init__(self):
+    def __init__(self, callback = None):
         self._initialized = False
         self._loop: AbstractEventLoop = None
-        self._command_callback = None
+        self._command_callback = callback
 
     def init(self, callback: callable = None):
         self._loop.run_until_complete(self.async_init(callback))
@@ -561,6 +561,7 @@ class HDMINetwork:
         self._device_added_callback = None
         self._initialized_callback = None
         self._device_removed_callback = None
+        self._adapter.set_on_command_callback(self.async_update)
 
     @property
     def initialized(self):
@@ -568,7 +569,7 @@ class HDMINetwork:
 
     async def async_init(self):
         _LOGGER.debug("initializing")  # pragma: no cover
-        self._adapter.set_on_command_callback(self.async_update)
+
         await self._adapter.async_init(self._initialized_callback)
         self._running = True
         _LOGGER.debug("Init done")  # pragma: no cover

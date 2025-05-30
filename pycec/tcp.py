@@ -43,7 +43,7 @@ class TcpAdapter(AbstractCecAdapter):
                 time.sleep(CONNECTION_ATTEMPT_DELAY)
         else:
             _LOGGER.error("Unable to connect! Giving up.")
-            self.shutdown()
+            await self.async_shutdown()
         if self._transport:
             _LOGGER.debug("New client: %s", self._transport)
             self._initialized = True
@@ -123,11 +123,11 @@ class TcpProtocol(asyncio.Protocol):
                 self.buffer = line
 
     def eof_received(self):
-        self._adapter.shutdown()
+        self._adapter.async_shutdown()
 
     def connection_lost(self, exc):
         _LOGGER.warning("Connection lost. Trying to reconnect...")
-        self._adapter.shutdown()
+        self._adapter.async_shutdown()
         self._adapter._tcp_loop.stop()
         self._adapter.init()
 
