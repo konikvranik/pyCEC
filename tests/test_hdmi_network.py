@@ -1,4 +1,5 @@
 import asyncio
+
 from pycec.commands import CecCommand
 from pycec.const import (
     CMD_POWER_STATUS,
@@ -14,33 +15,15 @@ from pycec.network import HDMINetwork, HDMIDevice, AbstractCecAdapter
 def test_devices():
     loop = asyncio.get_event_loop()
     network = HDMINetwork(
-        MockAdapter(
-            [
-                True,
-                True,
-                False,
-                True,
-                False,
-                True,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-            ]
-        ),
+        MockAdapter([True, True, False, True, False, True, False, False, False, False, False, False, False, False,
+                     False, False, ]),
+        loop,
         scan_interval=0,
-        loop=loop,
     )
     network._scan_delay = 0
     # network._adapter.set_command_callback(network.command_callback)
-    network.init()
-    network.scan()
+    loop.run_until_complete(network.async_init())
+    loop.run_until_complete(network.async_scan())
     loop.run_until_complete(asyncio.sleep(0.1))
     loop.stop()
     loop.run_forever()
@@ -48,8 +31,6 @@ def test_devices():
         assert HDMIDevice(i) in network.devices
     for i in [2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14]:
         assert HDMIDevice(i) not in network.devices
-    for d in network.devices:
-        d.async_shutdown()
     network.async_shutdown()
     loop.stop()
     loop.run_forever()
@@ -58,53 +39,33 @@ def test_devices():
 def test_scan():
     loop = asyncio.get_event_loop()
     network = HDMINetwork(
-        MockAdapter(
-            [
-                True,
-                True,
-                False,
-                True,
-                False,
-                True,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-            ]
-        ),
+        MockAdapter([True, True, False, True, False, True, False, False, False, False, False, False, False, False,
+                     False, False, ]),
+        loop,
         scan_interval=0,
-        loop=loop,
     )
     network._scan_delay = 0
     # network._adapter.set_command_callback(network.command_callback)
-    network.init()
-    network.scan()
+    loop.run_until_complete(network.async_init())
+    loop.run_until_complete(network.async_scan())
     loop.run_until_complete(asyncio.sleep(0.1))
-    loop.stop()
-    loop.run_forever()
 
     assert HDMIDevice(0) in network.devices
     device = network.get_device(0)
-    assert "Test0" == device.osd_name
-    assert 2 == device.power_status
+    assert device.osd_name == "Test0"
+    assert device.power_status == 2
 
     assert HDMIDevice(1) in network.devices
     device = network.get_device(1)
-    assert "Test1" == device.osd_name
-    assert 2 == device.power_status
+    assert device.osd_name == "Test1"
+    assert device.power_status == 2
 
     assert HDMIDevice(2) not in network.devices
 
     assert HDMIDevice(3) in network.devices
     device = network.get_device(3)
-    assert "Test3" == device.osd_name
-    assert 2 == device.power_status
+    assert device.osd_name == "Test3"
+    assert device.power_status == 2
     for d in network.devices:
         d.async_shutdown()
     network.async_shutdown()
@@ -130,10 +91,8 @@ class MockAdapter(AbstractCecAdapter):
     async def async_standby_devices(self):
         pass
 
-    def async_poll_device(self, i):
-        f = asyncio.Future()
-        f.set_result(self._data[i])
-        return f
+    async def async_poll_device(self, i):
+        return self._data[i]
 
     async def async_transmit(self, command):
         cmd = None

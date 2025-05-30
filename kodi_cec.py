@@ -47,7 +47,7 @@ class KodiAdapter(AbstractCecAdapter):
         self._loop.run_in_executor(self._io_executor,
                                    self._adapter.StandbyDevices)
 
-    def async_poll_device(self, device):
+    async def async_poll_device(self, device):
         return self._loop.run_in_executor(
             self._io_executor, self._adapter.PollDevice, device)
 

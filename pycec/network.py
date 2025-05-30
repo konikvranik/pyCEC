@@ -418,29 +418,6 @@ class HDMIDevice:
     def _update_power_status(self, command):
         self._power_status = command.att[0]
 
-    def _update_physical_address(self, command):
-        self._physical_address = PhysicalAddress(command.att[0:2])
-        if len(command.att) > 2:
-            self._type = command.att[2]
-
-    def _update_audio_status(self, command):
-        self._mute_status = bool(command.att[0] & 0x80)
-        raw_volume_status = command.att[0] & 0x7f
-        if raw_volume_status == 0x7f:
-            # Volume is unknown
-            self._updates[CMD_AUDIO_STATUS[0]] = False
-        else:
-            # Valid volumes cover a range of 0-100, just clamp invalid values
-            self._volume_status = min(raw_volume_status, 100)
-
-    @property
-    def task(self):
-        return self._task
-
-    @task.setter
-    def task(self, task):
-        self._task = task
-
     async def async_run(self):
         """
         Asynchronously executes a loop for updating device properties and managing periodic
@@ -470,6 +447,14 @@ class HDMIDevice:
                 await asyncio.sleep(0.3)
         _LOGGER.info("HDMI device %s stopped.", self)  # pragma: no cover
 
+    @property
+    def task(self):
+        return self._task
+
+    @task.setter
+    def task(self, task):
+        self._task = task
+
     def stop(self):  # pragma: no cover
         _LOGGER.debug("HDMI device %s stopping", self)
         self._stop = True
@@ -493,6 +478,22 @@ class HDMIDevice:
     @property
     def is_updated(self, cmd):
         return self._updates[cmd]
+
+
+    def _update_physical_address(self, command):
+        self._physical_address = PhysicalAddress(command.att[0:2])
+        if len(command.att) > 2:
+            self._type = command.att[2]
+
+    def _update_audio_status(self, command):
+        self._mute_status = bool(command.att[0] & 0x80)
+        raw_volume_status = command.att[0] & 0x7f
+        if raw_volume_status == 0x7f:
+            # Volume is unknown
+            self._updates[CMD_AUDIO_STATUS[0]] = False
+        else:
+            # Valid volumes cover a range of 0-100, just clamp invalid values
+            self._volume_status = min(raw_volume_status, 100)
 
     def __eq__(self, other):
         return (isinstance(other, (
@@ -574,27 +575,24 @@ class HDMINetwork:
         self._running = True
         _LOGGER.debug("Init done")  # pragma: no cover
 
-    def scan(self):
-        self._loop.run_until_complete(self.async_scan())
-
     async def async_scan(self):
         _LOGGER.info("Looking for new devices...")
         if not self.initialized:
             _LOGGER.error("Device not initialized!!!")  # pragma: no cover
             return
-        for device in range(15):
-            self._device_status[device] = await self._adapter.async_poll_device(device)
-            if self._device_status[device] and device not in self._devices:
-                self._devices[device] = HDMIDevice(device, self, loop=self._loop)
+        for addr in range(15):
+            self._device_status[addr] = await self._adapter.async_poll_device(addr)
+            if self._device_status[addr] and addr not in self._devices:
+                self._devices[addr] = HDMIDevice(addr, self, loop=self._loop)
                 if self._device_added_callback:
-                    self._loop.call_soon_threadsafe(self._device_added_callback, self._devices[device])
-                self._devices[device].task = self._loop.create_task(self._devices[device].async_run())
-                _LOGGER.debug("Found device %d", device)
-            elif not self._device_status[device] and device in self._devices:
-                self.get_device(device).stop()
+                    self._loop.call_soon_threadsafe(self._device_added_callback, self._devices[addr])
+                self._devices[addr].task = self._loop.create_task(self._devices[addr].async_run())
+                _LOGGER.debug("Found device %d", addr)
+            elif not self._device_status[addr] and addr in self._devices:
+                self.get_device(addr).stop()
                 if self._device_removed_callback:
-                    self._loop.call_soon_threadsafe(self._device_removed_callback, self._devices[device])
-                del (self._devices[device])
+                    self._loop.call_soon_threadsafe(self._device_removed_callback, self._devices[addr])
+                del (self._devices[addr])
 
     def send_command(self, command):
         self._loop.create_task(self.async_send_command(command))
