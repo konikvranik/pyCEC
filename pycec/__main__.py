@@ -4,7 +4,7 @@ import logging
 import os
 from optparse import OptionParser
 
-from pycec import DEFAULT_PORT, DEFAULT_HOST, LOCALHOST, CONF_DEFAULT, CONF_INTERFACE, CONF_PORT
+from pycec import DEFAULT_PORT, DEFAULT_HOST, LOCALHOST, CONF_DEFAULT, CONF_INTERFACE, CONF_PORT, CONF_LOGLEVEL
 from pycec.server import CECServer
 from . import _LOGGER
 
@@ -43,10 +43,10 @@ def configure():
     (options, args) = parser.parse_args()
     script_dir = os.path.dirname(os.path.realpath(__file__))
     config = configparser.ConfigParser()
-    config["DEFAULT"] = {
-        "interface": options.interface,
-        "port": options.port,
-        "logLevel": logging.INFO + ((options.quiet - options.verbose) * 10),
+    config[CONF_DEFAULT] = {
+        CONF_INTERFACE: options.interface,
+        CONF_PORT: options.port,
+        CONF_LOGLEVEL: logging.INFO + ((options.quiet - options.verbose) * 10),
     }
     paths = ["/etc/pycec.conf", script_dir + "/pycec.conf"]
     if "HOME" in os.environ:
@@ -58,9 +58,9 @@ def configure():
 
 def setup_logger(config):
     try:
-        log_level = int(config["DEFAULT"]["logLevel"])
+        log_level = int(config[CONF_DEFAULT][CONF_LOGLEVEL])
     except ValueError:
-        log_level = config["DEFAULT"]["logLevel"]
+        log_level = config[CONF_DEFAULT][CONF_LOGLEVEL]
     _LOGGER.setLevel(log_level)
     ch = logging.StreamHandler()
     ch.setLevel(log_level)
