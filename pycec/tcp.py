@@ -26,14 +26,6 @@ class TcpAdapter(AbstractCecAdapter):
         self._osd_name = name
         self._activate_source = activate_source
 
-    def _after_init(self, callback, f):
-        if self._transport:
-            _LOGGER.debug("New client: %s", self._transport)
-            self._initialized = True
-            self._tcp_loop.run_in_executor(None, self._tcp_loop.run_forever)
-        if callback:
-            callback()
-
     async def async_init(self, callback: callable = None):
         _LOGGER.debug("Starting connection...")
 
@@ -52,13 +44,18 @@ class TcpAdapter(AbstractCecAdapter):
         else:
             _LOGGER.error("Unable to connect! Giving up.")
             self.shutdown()
-        self._after_init(callback)
+        if self._transport:
+            _LOGGER.debug("New client: %s", self._transport)
+            self._initialized = True
+            self._tcp_loop.run_in_executor(None, self._tcp_loop.run_forever)
+        if callback:
+            callback()
 
-    def shutdown(self):
+    async def async_shutdown(self):
         self._initialized = False
         if self._transport is not None:
             if not self._transport.is_closing():
-                self._transport.close()
+                await self._loop.run_in_executor(self._transport.close)
         self._transport = None
 
     async def async_poll_device(self, device):
@@ -77,18 +74,18 @@ class TcpAdapter(AbstractCecAdapter):
     def get_logical_address(self):
         return 0xf
 
-    def standby_devices(self):
-        self.transmit(CecCommand(CMD_STANDBY))
+    async def async_standby_devices(self):
+        await self.async_transmit(CecCommand(CMD_STANDBY))
 
-    def transmit(self, command: CecCommand):
+    async def async_transmit(self, command: CecCommand):
         if self._transport is not None:
-            self._transport.write(("%s\r\n" % command.raw).encode())
+            self._loop.run_in_executor(None, self._transport.write, ("%s\r\n" % command.raw).encode())
         else:
             _LOGGER.error("Can not transmit command. Transport is not initialized.")
 
-    def power_on_devices(self):
-        self.transmit(KeyPressCommand(KEY_POWER))
-        self.transmit(KeyReleaseCommand())
+    async def async_power_on_devices(self):
+        await self.async_transmit(KeyPressCommand(KEY_POWER))
+        await self.async_transmit(KeyReleaseCommand())
 
     @property
     def transport(self):
@@ -132,19 +129,7 @@ class TcpProtocol(asyncio.Protocol):
         _LOGGER.warning("Connection lost. Trying to reconnect...")
         self._adapter.shutdown()
         self._adapter._tcp_loop.stop()
-        self._adapter._loop.run_until_complete(self._adapter.async_init())
-
-
-def main():
-    """For testing purpose"""
-    tcp_adapter = TcpAdapter("192.168.1.5", name="HASS", activate_source=False)
-    hdmi_network = HDMINetwork(tcp_adapter)
-    hdmi_network.start()
-    while True:
-        for d in hdmi_network.devices:
-            _LOGGER.info("Device: %s", d)
-
-        time.sleep(7)
+        self._adapter.init()
 
 
 if __name__ == '__main__':
@@ -174,4 +159,17 @@ if __name__ == '__main__':
     ch.setFormatter(formatter)
     _LOGGER.addHandler(ch)
 
-    main()
+    tcp_adapter = TcpAdapter("192.168.1.5", name="HASS", activate_source=False)
+    loop = asyncio.get_event_loop()
+    hdmi_network = HDMINetwork(tcp_adapter,loop)
+    loop.run_until_complete(hdmi_network.async_init())
+    loop.create_task(hdmi_network.async_watch())
+    try:
+        while True:
+            for d in hdmi_network.devices:
+                _LOGGER.info("Device: %s", d)
+
+            time.sleep(7)
+    except KeyboardInterrupt:
+        pass
+    hdmi_network.async_shutdown()

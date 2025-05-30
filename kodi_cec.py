@@ -43,7 +43,7 @@ class KodiAdapter(AbstractCecAdapter):
             lambda key, delay: callback(KeyPressCommand(key).raw))
         self._cecconfig.SetCommandCallback(callback)
 
-    def standby_devices(self):
+    async def async_standby_devices(self):
         self._loop.run_in_executor(self._io_executor,
                                    self._adapter.StandbyDevices)
 
@@ -51,7 +51,7 @@ class KodiAdapter(AbstractCecAdapter):
         return self._loop.run_in_executor(
             self._io_executor, self._adapter.PollDevice, device)
 
-    def shutdown(self):
+    async def async_shutdown(self):
         self._io_executor.shutdown()
         if self._adapter:
             self._adapter.Close()
@@ -59,14 +59,12 @@ class KodiAdapter(AbstractCecAdapter):
     def get_logical_address(self):
         return self._adapter.GetLogicalAddresses().primary
 
-    def power_on_devices(self):
-        self._loop.run_in_executor(self._io_executor,
-                                   self._adapter.PowerOnDevices)
+    async def async_power_on_devices(self):
+        await self._loop.run_in_executor(self._io_executor, self._adapter.PowerOnDevices)
 
-    def transmit(self, command: CecCommand):
-        self._loop.run_in_executor(
-            self._io_executor, self._adapter.Transmit,
-            self._adapter.CommandFromString(command.raw))
+    async def async_transmit(self, command: CecCommand):
+        self._loop.run_in_executor(self._io_executor, self._adapter.Transmit,
+                                   self._adapter.CommandFromString(command.raw))
 
     async def async_init(self, callback: callable = None):
         return self._loop.run_in_executor(self._io_executor, self._init, callback)

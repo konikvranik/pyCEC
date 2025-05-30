@@ -30,22 +30,22 @@ class CecAdapter(AbstractCecAdapter):
             lambda key, delay: callback(KeyPressCommand(key).raw))
         self._cecconfig.SetCommandCallback(callback)
 
-    def standby_devices(self):
-        self._loop.run_in_executor(self._io_executor, self._adapter.StandbyDevices)
+    async def async_standby_devices(self):
+        await self._loop.run_in_executor(self._io_executor, self._adapter.StandbyDevices)
 
     async def async_poll_device(self, device):
         return await self._loop.run_in_executor(self._io_executor, self._adapter.PollDevice, device)
 
-    def shutdown(self):
+    async def async_shutdown(self):
         self._io_executor.shutdown()
         if self._adapter:
-            self._adapter.Close()
+            await self._loop.run_in_executor(None, self._adapter.Close)
 
     def get_logical_address(self):
         return self._adapter.GetLogicalAddresses().primary
 
-    def power_on_devices(self):
-        self._loop.run_in_executor(self._io_executor, self._adapter.PowerOnDevices)
+    async def async_power_on_devices(self):
+        await self._loop.run_in_executor(self._io_executor, self._adapter.PowerOnDevices)
 
     async def async_transmit(self, command: CecCommand):
         await self._loop.run_in_executor(self._io_executor, self._adapter.Transmit,
