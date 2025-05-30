@@ -72,7 +72,6 @@ class KodiAdapter(AbstractCecAdapter):
     def _init(self, callback: callable = None):
         log("Initializing CEC...")
         log("Created adapter")
-        a = None
         if callback:
             callback()
 
@@ -101,7 +100,7 @@ class CecServerService(xbmc.Monitor):
         except Exception as e:
             log(f"Failed to start CEC TCP Server: {str(e)}", xbmc.LOGERROR)
 
-    def onSettingsChanged(self):
+    def onSettingsChanged(self): #noqa: N802
         """Reaguje na změnu nastavení"""
         log("Settings changed, restarting server")
         if self.server:

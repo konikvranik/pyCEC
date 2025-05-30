@@ -75,7 +75,7 @@ class AbstractCecAdapter:
     :type _command_callback: callable or None
     """
 
-    def __init__(self, callback = None):
+    def __init__(self, callback=None):
         self._initialized = False
         self._loop: AbstractEventLoop = None
         self._command_callback = callback

@@ -15,7 +15,7 @@ def configure():
                       help=("Address of interface to bind to. Default is '%s'." % DEFAULT_HOST))
     parser.add_option("-p", "--port", dest="port", action="store", type="int", default=DEFAULT_PORT,
                       help=("Port to bind to. Default is '%s'." % DEFAULT_PORT))
-    parser.add_option("-v", "--verbose", dest="verbose", action="count", default=0, help="Increase verbosity.");
+    parser.add_option("-v", "--verbose", dest="verbose", action="count", default=0, help="Increase verbosity.")
     parser.add_option("-q", "--quiet", dest="quiet", action="count", default=0, help="Decrease verbosity.")
     (options, args) = parser.parse_args()
     script_dir = os.path.dirname(os.path.realpath(__file__))

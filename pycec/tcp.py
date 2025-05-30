@@ -161,7 +161,7 @@ if __name__ == '__main__':
 
     tcp_adapter = TcpAdapter("192.168.1.5", name="HASS", activate_source=False)
     loop = asyncio.get_event_loop()
-    hdmi_network = HDMINetwork(tcp_adapter,loop)
+    hdmi_network = HDMINetwork(tcp_adapter, loop)
     loop.run_until_complete(hdmi_network.async_init())
     loop.create_task(hdmi_network.async_watch())
     try:
