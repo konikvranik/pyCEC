@@ -54,8 +54,8 @@ class CECServerProtocol(asyncio.Protocol):
 
 
 class CECServer:
-    def __init__(self, adapter, loop=asyncio.get_event_loop()):
-        self._loop = loop
+    def __init__(self, adapter, loop=None):
+        self._loop = loop if loop is not None else asyncio.get_event_loop()
         self._adapter = adapter
         self._network = HDMINetwork(self._adapter, self._loop)
         self._connections = set()
