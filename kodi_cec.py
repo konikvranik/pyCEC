@@ -100,8 +100,7 @@ class CecServerService(xbmc.Monitor):
         except Exception as e:
             log(f"Failed to start CEC TCP Server: {str(e)}", xbmc.LOGERROR)
 
-    # noqa: N802
-    def onSettingsChanged(self):
+    def onSettingsChanged(self):  # noqa: N802
         """Reaguje na změnu nastavení"""
         log("Settings changed, restarting server")
         if self.server:
