@@ -12,10 +12,6 @@ authors = [
 license = { text = "MIT" }
 readme = "README.rst"
 requires-python = ">=3.8"
-[project.optional-dependencies]
-dev = [
-    "Kodistubs>=20.0.0",
-]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Topic :: Utilities",
@@ -37,6 +33,21 @@ keywords = [
     "home-assistant",
     "kodi",
     "xbmc",
+]
+
+[project.optional-dependencies]
+dev = [
+    "Kodistubs>=20.0.0",
+]
+lint = [
+    "flake8>=7.0.0",
+    "flake8-pyproject>=1.2.3",
+    "black>=23.0.0",
+]
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "coveralls>=2.1.2",
 ]
 
 [project.urls]
