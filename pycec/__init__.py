@@ -13,3 +13,7 @@ CONF_PORT = "port"
 CONF_HOST = "host"
 CONF_INTERFACE = "interface"
 CONF_LOGLEVEL = "logLevel"
+CONF_MODE = "mode"
+
+MODE_SERVER = "server"
+MODE_CLIENT = "client"
