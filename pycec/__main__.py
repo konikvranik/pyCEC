@@ -4,7 +4,7 @@ import logging
 import os
 from optparse import OptionParser
 
-from pycec import DEFAULT_PORT, DEFAULT_HOST
+from pycec import DEFAULT_PORT, DEFAULT_HOST, LOCALHOST, CONF_DEFAULT, CONF_INTERFACE, CONF_PORT
 from pycec.server import CECServer
 from . import _LOGGER
 
@@ -14,11 +14,20 @@ def configure():
     parser.add_option(
         "-i",
         "--interface",
-        dest="host",
+        dest="interface",
         action="store",
         type="string",
         default=DEFAULT_HOST,
         help=("Address of interface to bind to. Default is '%s'." % DEFAULT_HOST),
+    )
+    parser.add_option(
+        "-h",
+        "--host",
+        dest="host",
+        action="store",
+        type="string",
+        default=DEFAULT_HOST,
+        help=("Address of interface to bind to. Default is '%s'." % LOCALHOST),
     )
     parser.add_option(
         "-p",
@@ -35,7 +44,7 @@ def configure():
     script_dir = os.path.dirname(os.path.realpath(__file__))
     config = configparser.ConfigParser()
     config["DEFAULT"] = {
-        "host": options.host,
+        "interface": options.interface,
         "port": options.port,
         "logLevel": logging.INFO + ((options.quiet - options.verbose) * 10),
     }
@@ -76,25 +85,17 @@ def setup_logger(config):
     _LOGGER.addHandler(ch)
 
 
-async def async_show_devices(network, loop):
-    while True:
-        async for d in network.devices:
-            _LOGGER.debug("Present device %s", d)
-        await asyncio.sleep(10)
+def local_server(loop, interface=DEFAULT_HOST, port: int = DEFAULT_PORT):
 
-
-def main():
-    config = configure()
-
-    # Configure logging
-    setup_logger(config)
-
-    loop = asyncio.get_event_loop()
     server = CECServer(loop)
-    loop.run_until_complete(server.start(config["DEFAULT"]["host"], int(config["DEFAULT"]["port"])))
+    loop.run_until_complete(server.start(interface, port))
     server.stop()
-    loop.close()
 
 
 if __name__ == "__main__":
-    main()
+    config = configure()
+    setup_logger(config)
+    loop = asyncio.get_event_loop()
+    local_server(loop, config[CONF_DEFAULT][CONF_INTERFACE], int(config[CONF_DEFAULT][CONF_PORT]))
+    loop.stop()
+    loop.close()
