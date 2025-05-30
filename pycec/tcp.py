@@ -30,9 +30,7 @@ class TcpAdapter(AbstractCecAdapter):
 
         for i in range(0, MAX_CONNECTION_ATTEMPTS):
             try:
-                self._transport, protocol = await self._tcp_loop.create_connection(
-                    lambda: TcpProtocol(self), host=self._host, port=self._port
-                )
+                self._transport, protocol = await self._tcp_loop.create_connection(lambda: TcpProtocol(self), host=self._host, port=self._port)
                 _LOGGER.debug("Connection started.")
                 break
             except (ConnectionRefusedError, RuntimeError) as e:
