@@ -78,7 +78,7 @@ def test_scan():
         scan_interval=0,
     )
     network._scan_delay = 0
-    loop=asyncio.get_event_loop()
+    loop = asyncio.get_event_loop()
     # network._adapter.set_command_callback(network.command_callback)
     loop.run_until_complete(network.async_init())
     loop.run_until_complete(network.async_scan())
