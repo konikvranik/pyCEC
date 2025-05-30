@@ -15,8 +15,26 @@ from pycec.network import HDMINetwork, HDMIDevice, AbstractCecAdapter
 def test_devices():
     loop = asyncio.get_event_loop()
     network = HDMINetwork(
-        MockAdapter([True, True, False, True, False, True, False, False, False, False, False, False, False, False,
-                     False, False, ]),
+        MockAdapter(
+            [
+                True,
+                True,
+                False,
+                True,
+                False,
+                True,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+            ]
+        ),
         loop,
         scan_interval=0,
     )
@@ -39,8 +57,26 @@ def test_devices():
 def test_scan():
     loop = asyncio.get_event_loop()
     network = HDMINetwork(
-        MockAdapter([True, True, False, True, False, True, False, False, False, False, False, False, False, False,
-                     False, False, ]),
+        MockAdapter(
+            [
+                True,
+                True,
+                False,
+                True,
+                False,
+                True,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+            ]
+        ),
         loop,
         scan_interval=0,
     )
