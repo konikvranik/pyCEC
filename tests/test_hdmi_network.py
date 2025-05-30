@@ -66,9 +66,7 @@ def test_scan():
     device = network.get_device(3)
     assert device.osd_name == "Test3"
     assert device.power_status == 2
-    for d in network.devices:
-        d.async_shutdown()
-    network.async_shutdown()
+    loop.run_until_complete(network.async_shutdown())
     loop.stop()
     loop.run_forever()
 
@@ -102,7 +100,7 @@ class MockAdapter(AbstractCecAdapter):
             att = [2]
         elif command.cmd == CMD_OSD_NAME[0]:
             cmd = CMD_OSD_NAME[1]
-            att = (ord(i) for i in ("Test%d" % command.dst))
+            att = [ord(i) for i in ("Test%d" % command.dst)]
         elif command.cmd == CMD_VENDOR[0]:
             cmd = CMD_VENDOR[1]
             att = [0x00, 0x09, 0xB0]
@@ -116,7 +114,7 @@ class MockAdapter(AbstractCecAdapter):
             cmd = CMD_AUDIO_STATUS[1]
             att = [0x65]
         response = CecCommand(cmd, src=command.dst, dst=command.src, att=att)
-        self._command_callback(">> " + response.raw)
+        await self._command_callback(">> " + response.raw)
 
     def get_logical_address(self):
         return 2

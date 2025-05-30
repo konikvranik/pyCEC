@@ -117,7 +117,7 @@ class TcpProtocol(asyncio.Protocol):
                     if cmd.src in self._adapter._polling:
                         del self._adapter._polling[cmd.src]
                 else:
-                    self._adapter._command_callback("<< " + line)
+                    self._adapter._loop.run_until_complete(self._adapter._command_callback("<< " + line))
                 self.buffer = ''
             else:
                 self.buffer = line
