@@ -4,7 +4,9 @@ import logging
 import os
 from optparse import OptionParser
 
-from pycec import DEFAULT_PORT, DEFAULT_HOST, LOCALHOST, CONF_DEFAULT, CONF_INTERFACE, CONF_PORT, CONF_LOGLEVEL
+from pycec import DEFAULT_PORT, DEFAULT_HOST, LOCALHOST, CONF_DEFAULT, CONF_INTERFACE, CONF_PORT, CONF_LOGLEVEL, \
+    CONF_HOST, MODE_SERVER, CONF_MODE, MODE_CLIENT, \
+    tcp
 from pycec.server import CECServer
 from . import _LOGGER
 
@@ -14,25 +16,23 @@ def configure():
     parser.add_option(
         "-i",
         "--interface",
-        dest="interface",
+        dest=CONF_INTERFACE,
         action="store",
         type="string",
-        default=DEFAULT_HOST,
-        help=("Address of interface to bind to. Default is '%s'." % DEFAULT_HOST),
+        help="Address of interface to bind to.",
     )
     parser.add_option(
         "-h",
         "--host",
-        dest="host",
+        dest=CONF_HOST,
         action="store",
         type="string",
-        default=DEFAULT_HOST,
-        help=("Address of interface to bind to. Default is '%s'." % LOCALHOST),
+        help="Address of interface to bind to.",
     )
     parser.add_option(
         "-p",
         "--port",
-        dest="port",
+        dest=CONF_PORT,
         action="store",
         type="int",
         default=DEFAULT_PORT,
@@ -52,6 +52,14 @@ def configure():
     if "HOME" in os.environ:
         paths.append(os.environ["HOME"] + "/.pycec")
     config.read(paths)
+
+    if config[CONF_DEFAULT][CONF_INTERFACE] is not None and config[CONF_DEFAULT][CONF_HOST] is not None:
+        _LOGGER.error("Only one of --interface and --host can be used.")
+        exit(1)
+    elif config[CONF_DEFAULT][CONF_HOST] is not None:
+        config[CONF_DEFAULT][CONF_MODE] = MODE_CLIENT
+    elif config[CONF_DEFAULT][CONF_INTERFACE] is not None:
+        config[CONF_DEFAULT][CONF_MODE] = MODE_SERVER
 
     return config
 
@@ -96,6 +104,9 @@ if __name__ == "__main__":
     config = configure()
     setup_logger(config)
     loop = asyncio.get_event_loop()
-    local_server(loop, config[CONF_DEFAULT][CONF_INTERFACE], int(config[CONF_DEFAULT][CONF_PORT]))
+    if config[CONF_DEFAULT][CONF_MODE] == MODE_SERVER:
+        local_server(loop, config[CONF_DEFAULT][CONF_INTERFACE], int(config[CONF_DEFAULT][CONF_PORT]))
+    elif config[CONF_DEFAULT][CONF_MODE] == MODE_CLIENT:
+        tcp.client(loop, config[CONF_DEFAULT][CONF_HOST] if CONF_HOST in config[CONF_DEFAULT] else LOCALHOST, int(config[CONF_DEFAULT][CONF_PORT]))
     loop.stop()
     loop.close()
