@@ -29,7 +29,7 @@ class CECServerProtocol(asyncio.Protocol):
                 if len(line) == 2:
                     _LOGGER.info("Received poll %s from %s", line, self._transport.get_extra_info('peername'))
                     device = CecCommand(line).dst
-                    t: futures.Future = self._hdmi_network._adapter.poll_device(device)
+                    t: futures.Future = self._hdmi_network._adapter.async_poll_device(device)
                     t.add_done_callback(functools.partial(self._after_poll, device))
                 else:
                     _LOGGER.info("Received command %s from %s", line, self._transport.get_extra_info('peername'))

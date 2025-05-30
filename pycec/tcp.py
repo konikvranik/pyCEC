@@ -1,5 +1,4 @@
 import asyncio
-import functools
 import logging
 import time
 from asyncio import Transport
@@ -17,11 +16,9 @@ _LOGGER = logging.getLogger(__name__)
 
 # pragma: no cover
 class TcpAdapter(AbstractCecAdapter):
-    def __init__(self, host, port=DEFAULT_PORT, name=None,
-                 activate_source=None):
+    def __init__(self, host, port=DEFAULT_PORT, name=None, activate_source=None):
         super().__init__()
         self._polling = dict()
-        self._command_callback = None
         self._tcp_loop = asyncio.new_event_loop()
         self._host = host
         self._port = port
@@ -37,13 +34,13 @@ class TcpAdapter(AbstractCecAdapter):
         if callback:
             callback()
 
-    def _init(self):
+    async def async_init(self, callback: callable = None):
+        _LOGGER.debug("Starting connection...")
+
         for i in range(0, MAX_CONNECTION_ATTEMPTS):
             try:
-                self._transport, protocol = self._tcp_loop.run_until_complete(
-                    self._tcp_loop.create_connection(lambda: TcpProtocol(self),
-                                                     host=self._host,
-                                                     port=self._port))
+                self._transport, protocol = await self._tcp_loop.create_connection(lambda: TcpProtocol(self),
+                                                                                   host=self._host, port=self._port)
                 _LOGGER.debug("Connection started.")
                 break
             except (ConnectionRefusedError, RuntimeError) as e:
@@ -55,12 +52,7 @@ class TcpAdapter(AbstractCecAdapter):
         else:
             _LOGGER.error("Unable to connect! Giving up.")
             self.shutdown()
-
-    def init(self, callback: callable = None):
-        _LOGGER.debug("Starting connection...")
-        task = self._loop.run_in_executor(None, self._init)
-        task.add_done_callback(functools.partial(self._after_init, callback))
-        return task
+        self._after_init(callback)
 
     def shutdown(self):
         self._initialized = False
@@ -69,22 +61,18 @@ class TcpAdapter(AbstractCecAdapter):
                 self._transport.close()
         self._transport = None
 
-    def _poll_device(self, device):
+    async def async_poll_device(self, device):
         timestamp = self._loop.time()
         poll_bucket = self._polling.get(device, set())
         poll_bucket.add(timestamp)
         self._polling.update({device: poll_bucket})
-        self.transmit(PollCommand(device))
-        while True:
+        await self.async_transmit(PollCommand(device))
+        while self._loop.time() < (timestamp + 5):
             if timestamp not in self._polling.get(device, set()):
                 _LOGGER.debug("Found device %d.", device)
                 return True
-            if self._loop.time() > (timestamp + 5):
-                return False
-            time.sleep(.1)
-
-    def poll_device(self, device):
-        return self._loop.run_in_executor(None, self._poll_device, device)
+            await asyncio.sleep(.1)
+        return False
 
     def get_logical_address(self):
         return 0xf
@@ -97,9 +85,6 @@ class TcpAdapter(AbstractCecAdapter):
             self._transport.write(("%s\r\n" % command.raw).encode())
         else:
             _LOGGER.error("Can not transmit command. Transport is not initialized.")
-
-    def set_command_callback(self, callback):
-        self._command_callback = callback
 
     def power_on_devices(self):
         self.transmit(KeyPressCommand(KEY_POWER))
@@ -119,6 +104,7 @@ class TcpProtocol(asyncio.Protocol):
 
     def __init__(self, adapter: TcpAdapter):
         self._adapter = adapter
+        self._loop = adapter._loop
 
     def connection_made(self, transport):
         self._adapter.transport = transport
@@ -128,8 +114,7 @@ class TcpProtocol(asyncio.Protocol):
         for line in self.buffer.splitlines(keepends=True):
             if line.count('\n') or line.count('\r'):
                 line = line.rstrip()
-                _LOGGER.debug("Received %s from %s", line,
-                              self._adapter.transport.get_extra_info('peername'))
+                _LOGGER.debug("Received %s from %s", line, self._adapter.transport.get_extra_info('peername'))
                 if len(line) == 2:
                     cmd = CecCommand(line)
                     if cmd.src in self._adapter._polling:
@@ -147,7 +132,7 @@ class TcpProtocol(asyncio.Protocol):
         _LOGGER.warning("Connection lost. Trying to reconnect...")
         self._adapter.shutdown()
         self._adapter._tcp_loop.stop()
-        self._adapter.init()
+        self._adapter._loop.run_until_complete(self._adapter.async_init())
 
 
 def main():

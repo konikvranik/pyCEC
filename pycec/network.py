@@ -1,7 +1,6 @@
 import asyncio
-import functools
 import time
-from asyncio import futures, AbstractEventLoop
+from asyncio import AbstractEventLoop
 from functools import reduce
 from multiprocessing import Queue
 from typing import List
@@ -62,32 +61,143 @@ class PhysicalAddress:
 
 
 class AbstractCecAdapter:
+    """
+    Facilitates an abstract interface for handling Consumer Electronics Control (CEC) commands and device management.
+
+    This class acts as a foundational interface for interacting with devices that support CEC commands. The primary
+    purpose is to define methods for initializing CEC communication, sending commands, polling devices, and managing
+    device states. It also provides the ability to set event loops and command callbacks. Concrete implementations of
+    this class should handle the actual details of communication and interaction with the devices.
+
+    :ivar _initialized: Indicates whether the adapter is initialized.
+    :type _initialized: bool
+    :ivar _loop: Reference to the event loop associated with the adapter.
+    :type _loop: AbstractEventLoop
+    :ivar _command_callback: Stores the callback function for command handling.
+    :type _command_callback: callable or None
+    """
+
     def __init__(self):
         self._initialized = False
         self._loop: AbstractEventLoop = None
+        self._command_callback = None
 
     def init(self, callback: callable = None):
+        self._loop.run_until_complete(self.async_init(callback))
+
+    async def async_init(self, callback: callable = None):
+        """
+        Initializes an instance with an optional callback function.
+
+        The constructor provides an interface to initialize the object, allowing an
+        optional callable callback function to be provided.
+
+        :param callback: A callable object or function that can be executed or invoked.
+        :return: None
+        """
         raise NotImplementedError
 
-    def poll_device(self, device) -> futures.Future:
+    async def async_poll_device(self, device) -> bool:
+        """
+        Polls the given device and returns a Future object.
+        The returned Future allows asynchronous handling of the polling operation.
+
+        :param device: The device to poll.
+        :type device: Any
+        :return: A Future object representing the polling operation.
+        :rtype: concurrent.futures.Future
+        """
         raise NotImplementedError
 
     def get_logical_address(self):
+        """
+        Retrieves the logical address of the current instance.
+
+        It is designed to provide a specific logical address relating to the instance's domain.
+         The logical address concept is context-dependent and should be appropriately
+        defined in the implementing subclass.
+
+        :raises NotImplementedError: Raised when the method is not implemented
+            in a subclass.
+        :rtype: None
+        :return: None, as the method is abstract and must be implemented
+            by subclasses.
+        """
         raise NotImplementedError
 
+    async def async_transmit(self, command: CecCommand):
+        """
+        Asynchronously transmits a given CEC (Consumer Electronics Control) command using an executor.
+
+        This method schedules the transmission of a CEC command to be executed asynchronously
+        in a separate thread or process outside the main event loop, using the event loop's
+        executor. It ensures non-blocking execution, enabling other coroutine tasks to proceed.
+
+        :param command: The CEC command to be transmitted.
+        :type command: CecCommand
+        :return: None
+        """
+        await self._loop.run_in_executor(None, self.transmit, command)
+
     def transmit(self, command: CecCommand):
+        """
+        Transmits a given CEC command using the underlying implementation.
+
+        The provided command will be used to perform an operation through
+        the relevant consumer electronics control interface implementation.
+
+        :param command: The CEC command to be transmitted. This should be an
+            instance of the `CecCommand` class.
+        :raises NotImplementedError: Always raised in the base implementation
+            indicating that this method must be implemented in a subclass.
+        """
         raise NotImplementedError
 
     def standby_devices(self):
+        """
+        Places devices into standby mode. This function defines the specific logic for entering standby mode.
+
+        :raises NotImplementedError: Indicates that the method is not implemented in the
+                                      subclass.
+        :return: None
+        """
         raise NotImplementedError
 
     def power_on_devices(self):
+        """
+        Power on the devices managed by this instance.
+
+        This method is intended to activate or turn on the devices associated
+        with the instance.
+
+        :raises NotImplementedError: When called on a base class or abstract
+            implementation without an override.
+        :return: None
+        """
         raise NotImplementedError
 
     def set_command_callback(self, callback):
-        raise NotImplementedError
+        """
+        Sets the callback function for handling commands. The provided callback function
+        will be invoked whenever a command needs to be processed, allowing customization
+        of command processing behavior.
+
+        :param callback: The function to be called when a command is triggered.
+        :type callback: Callable[[Any], None]
+        :return: None
+        """
+        self._command_callback = callback
 
     def shutdown(self):
+        """
+        Shuts down the operation of a component or service implementing this method.
+
+        This method is expected to be implemented by subclasses to define specific
+        shutdown behavior. Calling this method in the base class directly without an
+        implementation will result in `NotImplementedError`.
+
+        :raises NotImplementedError: If the method is not implemented by a subclass.
+        """
         raise NotImplementedError
 
     @property
@@ -95,10 +205,93 @@ class AbstractCecAdapter:
         return self._initialized
 
     def set_event_loop(self, loop):
+        """
+        Sets the event loop for the current instance.
+
+        This method allows for assigning an event loop to the object,
+        which will then be stored internally for further use. Use
+        this function to manage or update the event loop of a
+        specific instance.
+
+        :param loop: The event loop to be set for the instance.
+        :type loop: AbstractEventLoop
+        :return: None
+        """
         self._loop = loop
 
 
 class HDMIDevice:
+    """
+    Represents an HDMI device connected to a network for communication and control.
+
+    This class manages the state and properties of an HDMI device, such as its
+    physical and logical addresses, power status, vendor information, and audio
+    settings. It provides methods for controlling the device (e.g., turning it on
+    or off, toggling states) and retrieving or updating its status. The class also
+    handles asynchronous communication for sending and receiving commands over the
+    HDMI network.
+
+    :ivar name: A unique name for the HDMI device based on its logical address.
+    :type name: str
+    :ivar _loop: The event loop used for asynchronous operations with the device.
+    :type _loop: asyncio.AbstractEventLoop
+    :ivar _logical_address: Logical address of the HDMI device, representing
+        its unique identifier on the HDMI network.
+    :type _logical_address: int
+    :ivar _physical_address: Physical address of the HDMI device, representing
+        its connectivity structure on the HDMI network.
+    :type _physical_address: PhysicalAddress
+    :ivar _power_status: Current power state of the HDMI device.
+    :type _power_status: int
+    :ivar _audio_status: Current audio status of the HDMI device.
+    :type _audio_status: int
+    :ivar _is_active_source: Indicates if the device is the active HDMI source.
+    :type _is_active_source: bool
+    :ivar _vendor_id: Vendor ID representing the manufacturer of the device.
+    :type _vendor_id: int
+    :ivar _menu_language: Language code of the device's menu settings.
+    :type _menu_language: str
+    :ivar _osd_name: The On-Screen Display (OSD) name of the device.
+    :type _osd_name: str
+    :ivar _audio_mode_status: Status of the audio mode for the device.
+    :type _audio_mode_status: int
+    :ivar _volume_status: The current volume status of the device,
+        indicating its audio level.
+    :type _volume_status: int
+    :ivar _mute_status: Indicates whether the device's audio is muted.
+    :type _mute_status: bool
+    :ivar _deck_status: Represents the playback status of the device.
+    :type _deck_status: int
+    :ivar _tuner_status: Represents the tuner status of the device.
+    :type _tuner_status: int
+    :ivar _menu_status: Indicates the menu state of the device.
+    :type _menu_status: int
+    :ivar _record_status: Represents the recording status of the device.
+    :type _record_status: int
+    :ivar _timer_cleared_status: Indicates whether the device's timer
+        has been cleared.
+    :type _timer_cleared_status: int
+    :ivar _timer_status: Current timer status of the device.
+    :type _timer_status: int
+    :ivar _network: HDMI network interface used for communication with the device.
+    :type _network: Any
+    :ivar _updates: A mapping of updateable properties and their update states.
+    :type _updates: dict
+    :ivar _stop: Indicates whether the device's execution loop should stop.
+    :type _stop: bool
+    :ivar _update_period: Interval for periodic device updates.
+    :type _update_period: float
+    :ivar _type: Represents the type of the HDMI device.
+    :type _type: int
+    :ivar _update_callback: A callback function that gets invoked when the
+        device's state updates.
+    :type _update_callback: Callable
+    :ivar _status: Represents the detailed status of the device.
+    :type _status: Any
+    :ivar _task: The asyncio task managing the device's operation.
+    :type _task: asyncio.Task
+    """
+
     def __init__(self, logical_address: int, network=None,
                  update_period=DEFAULT_UPDATE_PERIOD,
                  loop=None):
@@ -208,6 +401,17 @@ class HDMIDevice:
         return self._volume_status
 
     def update_callback(self, command: CecCommand):
+        """
+        Updates a component's properties based on a received command. The method verifies
+        if the command matches any predefined updatable properties and updates them accordingly.
+        Triggers a callback if any updates were made.
+
+        :param command: The command containing information to update the component
+                        properties.
+        :type command: CecCommand
+        :return: Boolean indicating whether any updates were successfully applied.
+        :rtype: bool
+        """
         result = False
         for prop in filter(lambda x: x[1] == command.cmd, UPDATEABLE):
             getattr(self, UPDATEABLE[prop])(command)
@@ -254,6 +458,22 @@ class HDMIDevice:
         self._task = task
 
     async def async_run(self):
+        """
+        Asynchronously executes a loop for updating device properties and managing periodic
+        wait cycles until the stop condition is met.
+
+        The function iterates over a list of updateable properties and requests updates
+        only if the stop condition has not been triggered. After each set of property
+        updates, it waits for a defined update period, periodically checking if the
+        stop condition has been met. Once the loop exits, the function logs that the
+        device has stopped.
+
+        :param self: Represents the instance of the class this method belongs to.
+        :type self: object
+
+        :return: Does not return any value. Represents a coroutine that must be awaited.
+        :rtype: None
+        """
         _LOGGER.debug("Starting device %d", self.logical_address)
         while not self._stop:
             for prop in UPDATEABLE:
@@ -307,8 +527,45 @@ class HDMIDevice:
 
 
 class HDMINetwork:
+    """
+    Represents a network for managing and monitoring HDMI devices using the
+    CEC (Consumer Electronics Control) protocol.
+
+    This class provides a mechanism to control and monitor HDMI devices
+    connected through an HDMI-CEC adapter. It supports asynchronous operations
+    to manage devices, send commands, and handle events via callbacks.
+
+    :ivar _adapter: The CEC adapter used for communication and control.
+    :type _adapter: AbstractCecAdapter
+    :ivar _loop: The asyncio event loop used for asynchronous operations.
+    :type _loop: asyncio.AbstractEventLoop
+    :ivar _running: Indicates whether the HDMI network is currently running.
+    :type _running: bool
+    :ivar _managed_loop: Specifies if the loop is managed internally or shared externally.
+    :type _managed_loop: bool
+    :ivar _scan_delay: The delay duration to apply during scanning operations.
+    :type _scan_delay: float
+    :ivar _scan_interval: Interval between scan operations for detecting devices.
+    :type _scan_interval: float
+    :ivar _command_queue: Queue to manage outbound HDMI-CEC commands.
+    :type _command_queue: Queue
+    :ivar _devices: Collection of connected HDMI devices indexed by device ID.
+    :type _devices: dict[int, HDMIDevice]
+    :ivar _device_status: Holds the status of connected devices indexed by ID.
+    :type _device_status: dict[int, bool]
+    :ivar _command_callback: Callback function invoked on receiving a new command.
+    :type _command_callback: Optional[Callable[[CecCommand], None]]
+    :ivar _device_added_callback: Callback invoked when a new device is added.
+    :type _device_added_callback: Optional[Callable[[HDMIDevice], None]]
+    :ivar _device_removed_callback: Callback invoked when a device is removed.
+    :type _device_removed_callback: Optional[Callable[[HDMIDevice], None]]
+    :ivar _initialized_callback: Callback executed after initialization completes.
+    :type _initialized_callback: Optional[Callable[[], None]]
+    ```
+    """
+
     def __init__(self, adapter: AbstractCecAdapter,
-                 scan_interval=DEFAULT_SCAN_INTERVAL, loop=None):
+                 scan_interval=DEFAULT_SCAN_INTERVAL, loop: AbstractEventLoop = None):
         self._running = False
         self._device_status = dict()
         self._managed_loop = loop is None
@@ -340,41 +597,31 @@ class HDMINetwork:
         _LOGGER.debug("setting callback")  # pragma: no cover
         self._adapter.set_command_callback(self.command_callback)
         _LOGGER.debug("Callback set")  # pragma: no cover
-        task = self._adapter.init(self._initialized_callback)
+        await self._adapter.async_init(self._initialized_callback)
         self._running = True
-        while not (task.done() or task.cancelled()) and self._running:
-            _LOGGER.debug("Init pending - %s", task)  # pragma: no cover
-            await asyncio.sleep(1)
         _LOGGER.debug("Init done")  # pragma: no cover
 
     def scan(self):
-        self._loop.create_task(self.async_scan())
-
-    def _after_polled(self, device, task):
-        self._device_status[device] = task.result()
-        if self._device_status[device] and device not in self._devices:
-            self._devices[device] = HDMIDevice(device, self, loop=self._loop)
-            if self._device_added_callback:
-                self._loop.call_soon_threadsafe(self._device_added_callback,
-                                                self._devices[device])
-            task = self._loop.create_task(self._devices[device].async_run())
-            self._devices[device].task = task
-            _LOGGER.debug("Found device %d", device)
-        elif not self._device_status[device] and device in self._devices:
-            self.get_device(device).stop()
-            if self._device_removed_callback:
-                self._loop.call_soon_threadsafe(self._device_removed_callback,
-                                                self._devices[device])
-            del (self._devices[device])
+        self._loop.run_until_complete(self.async_scan())
 
     async def async_scan(self):
         _LOGGER.info("Looking for new devices...")
         if not self.initialized:
             _LOGGER.error("Device not initialized!!!")  # pragma: no cover
             return
-        for d in range(15):
-            task = self._adapter.poll_device(d)
-            task.add_done_callback(functools.partial(self._after_polled, d))
+        for device in range(15):
+            self._device_status[device] = await self._adapter.async_poll_device(device)
+            if self._device_status[device] and device not in self._devices:
+                self._devices[device] = HDMIDevice(device, self, loop=self._loop)
+                if self._device_added_callback:
+                    self._loop.call_soon_threadsafe(self._device_added_callback, self._devices[device])
+                self._devices[device].task = self._loop.create_task(self._devices[device].async_run())
+                _LOGGER.debug("Found device %d", device)
+            elif not self._device_status[device] and device in self._devices:
+                self.get_device(device).stop()
+                if self._device_removed_callback:
+                    self._loop.call_soon_threadsafe(self._device_removed_callback, self._devices[device])
+                del (self._devices[device])
 
     def send_command(self, command):
         self._loop.create_task(self.async_send_command(command))
@@ -385,7 +632,7 @@ class HDMINetwork:
         _LOGGER.debug("<< %s", command)
         if command.src is None or command.src == 0xf:
             command.src = self._adapter.get_logical_address()
-        self._loop.call_soon_threadsafe(self._adapter.transmit, command)
+        await self._adapter.async_transmit(command)
 
     def standby(self):
         self._loop.create_task(self.async_standby())
