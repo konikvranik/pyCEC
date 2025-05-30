@@ -4,8 +4,7 @@ from pycec.const import CMD_KEY_PRESS, CMD_KEY_RELEASE, CMD_POLL
 
 
 class CecCommand:
-    def __init__(self, cmd, dst: int = None, src: int = None,
-                 att: List[int] = None, raw: str = None):
+    def __init__(self, cmd, dst: int = None, src: int = None, att: List[int] = None, raw: str = None):
 
         self._src = src
         self._dst = dst
@@ -52,13 +51,16 @@ class CecCommand:
     @property
     def raw(self) -> str:
         atts = "".join([":%02x" % i for i in self.att])
-        cmd = ("" if self.cmd is None else (":%02x" % self.cmd))
-        return "%1x%1x%s%s" % (self.src if self.src is not None else 0xf,
-                               self.dst if self.dst is not None else 0xf,
-                               cmd, atts)
+        cmd = "" if self.cmd is None else (":%02x" % self.cmd)
+        return "%1x%1x%s%s" % (
+            self.src if self.src is not None else 0xF,
+            self.dst if self.dst is not None else 0xF,
+            cmd,
+            atts,
+        )
 
     def _raw(self, value: str):
-        atts = value.split(':')
+        atts = value.split(":")
         self.src = int(atts[0][0], 16)
         self.dst = int(atts[0][1], 16)
         if len(atts) > 1:

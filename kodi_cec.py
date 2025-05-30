@@ -16,12 +16,12 @@ from pycec.server import CECServer
 
 # Získání instance addonu a cest
 ADDON = xbmcaddon.Addon()
-ADDON_ID = ADDON.getAddonInfo('id')
-ADDON_PATH = xbmcvfs.translatePath(ADDON.getAddonInfo('path'))
+ADDON_ID = ADDON.getAddonInfo("id")
+ADDON_PATH = xbmcvfs.translatePath(ADDON.getAddonInfo("path"))
 
 # Přidání cest k potřebným knihovnám
-LIB_DIR = os.path.join(ADDON_PATH, 'lib')
-RESOURCES_LIB_DIR = os.path.join(ADDON_PATH, 'resources', 'lib')
+LIB_DIR = os.path.join(ADDON_PATH, "lib")
+RESOURCES_LIB_DIR = os.path.join(ADDON_PATH, "resources", "lib")
 
 # Přidání cest do systémové cesty pro import
 sys.path.insert(0, LIB_DIR)
@@ -34,22 +34,24 @@ def log(msg, level=xbmc.LOGINFO):
 
 
 class KodiAdapter(AbstractCecAdapter):
-    def __init__(self, name: str = None, monitor_only: bool = None, activate_source: bool = None,
-                 device_type=ADDR_RECORDINGDEVICE1):
+    def __init__(
+        self,
+        name: str = None,
+        monitor_only: bool = None,
+        activate_source: bool = None,
+        device_type=ADDR_RECORDINGDEVICE1,
+    ):
         super().__init__()
 
     def set_on_command_callback(self, callback):
-        self._cecconfig.SetKeyPressCallback(
-            lambda key, delay: callback(KeyPressCommand(key).raw))
+        self._cecconfig.SetKeyPressCallback(lambda key, delay: callback(KeyPressCommand(key).raw))
         self._cecconfig.SetCommandCallback(callback)
 
     async def async_standby_devices(self):
-        self._loop.run_in_executor(self._io_executor,
-                                   self._adapter.StandbyDevices)
+        self._loop.run_in_executor(self._io_executor, self._adapter.StandbyDevices)
 
     async def async_poll_device(self, device):
-        return self._loop.run_in_executor(
-            self._io_executor, self._adapter.PollDevice, device)
+        return self._loop.run_in_executor(self._io_executor, self._adapter.PollDevice, device)
 
     async def async_shutdown(self):
         self._io_executor.shutdown()
@@ -63,8 +65,9 @@ class KodiAdapter(AbstractCecAdapter):
         await self._loop.run_in_executor(self._io_executor, self._adapter.PowerOnDevices)
 
     async def async_transmit(self, command: CecCommand):
-        self._loop.run_in_executor(self._io_executor, self._adapter.Transmit,
-                                   self._adapter.CommandFromString(command.raw))
+        self._loop.run_in_executor(
+            self._io_executor, self._adapter.Transmit, self._adapter.CommandFromString(command.raw)
+        )
 
     async def async_init(self, callback: callable = None):
         return self._loop.run_in_executor(self._io_executor, self._init, callback)
@@ -88,8 +91,8 @@ class CecServerService(xbmc.Monitor):
     def start(self):
         """Spustí TCP server"""
         # Získání nastavení
-        host = ADDON.getSetting('host') or '0.0.0.0'
-        port = int(ADDON.getSetting('port') or 9998)
+        host = ADDON.getSetting("host") or "0.0.0.0"
+        port = int(ADDON.getSetting("port") or 9998)
 
         log(f"Starting CEC TCP Server on {host}:{port}")
 
@@ -115,7 +118,7 @@ class CecServerService(xbmc.Monitor):
 
 
 # Hlavní funkce addonu
-if __name__ == '__main__':
+if __name__ == "__main__":
     log(f"Starting {ADDON.getAddonInfo('name')} version {ADDON.getAddonInfo('version')}")
 
     # Vytvoření a spuštění služby

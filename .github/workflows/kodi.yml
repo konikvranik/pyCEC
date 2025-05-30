@@ -1,0 +1,26 @@
+name: Kodi Addon Submit
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  kodi-addon-submitter:
+    runs-on: ubuntu-latest
+    name: Kodi addon submitter
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Kodi Addon Submitter
+        id: addon-submitter
+        uses: xbmc/action-kodi-addon-submitter@v1.3
+        with:
+          kodi-repository: repo-plugins
+          kodi-version: matrix
+          addon-id: service.cec.server
+          kodi-matrix: true
+        env:
+          GH_USERNAME: ${{ secrets.GH_USERNAME }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          EMAIL: ${{ secrets.EMAIL }}

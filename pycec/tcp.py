@@ -3,8 +3,7 @@ import logging
 import time
 from asyncio import Transport
 
-from pycec.commands import CecCommand, KeyPressCommand, KeyReleaseCommand, \
-    PollCommand
+from pycec.commands import CecCommand, KeyPressCommand, KeyReleaseCommand, PollCommand
 from pycec.const import CMD_STANDBY, KEY_POWER
 from pycec.network import AbstractCecAdapter, HDMINetwork
 
@@ -31,15 +30,18 @@ class TcpAdapter(AbstractCecAdapter):
 
         for i in range(0, MAX_CONNECTION_ATTEMPTS):
             try:
-                self._transport, protocol = await self._tcp_loop.create_connection(lambda: TcpProtocol(self),
-                                                                                   host=self._host, port=self._port)
+                self._transport, protocol = await self._tcp_loop.create_connection(
+                    lambda: TcpProtocol(self), host=self._host, port=self._port
+                )
                 _LOGGER.debug("Connection started.")
                 break
             except (ConnectionRefusedError, RuntimeError) as e:
                 _LOGGER.warning(
-                    "Unable to connect due to %s. Trying again in %d seconds, "
-                    "%d attempts remaining.",
-                    e, CONNECTION_ATTEMPT_DELAY, MAX_CONNECTION_ATTEMPTS - i)
+                    "Unable to connect due to %s. Trying again in %d seconds, " "%d attempts remaining.",
+                    e,
+                    CONNECTION_ATTEMPT_DELAY,
+                    MAX_CONNECTION_ATTEMPTS - i,
+                )
                 time.sleep(CONNECTION_ATTEMPT_DELAY)
         else:
             _LOGGER.error("Unable to connect! Giving up.")
@@ -68,11 +70,11 @@ class TcpAdapter(AbstractCecAdapter):
             if timestamp not in self._polling.get(device, set()):
                 _LOGGER.debug("Found device %d.", device)
                 return True
-            await asyncio.sleep(.1)
+            await asyncio.sleep(0.1)
         return False
 
     def get_logical_address(self):
-        return 0xf
+        return 0xF
 
     async def async_standby_devices(self):
         await self.async_transmit(CecCommand(CMD_STANDBY))
@@ -97,7 +99,7 @@ class TcpAdapter(AbstractCecAdapter):
 
 
 class TcpProtocol(asyncio.Protocol):
-    buffer = ''
+    buffer = ""
 
     def __init__(self, adapter: TcpAdapter):
         self._adapter = adapter
@@ -109,16 +111,16 @@ class TcpProtocol(asyncio.Protocol):
     def data_received(self, data: bytes):
         self.buffer += bytes.decode(data)
         for line in self.buffer.splitlines(keepends=True):
-            if line.count('\n') or line.count('\r'):
+            if line.count("\n") or line.count("\r"):
                 line = line.rstrip()
-                _LOGGER.debug("Received %s from %s", line, self._adapter.transport.get_extra_info('peername'))
+                _LOGGER.debug("Received %s from %s", line, self._adapter.transport.get_extra_info("peername"))
                 if len(line) == 2:
                     cmd = CecCommand(line)
                     if cmd.src in self._adapter._polling:
                         del self._adapter._polling[cmd.src]
                 else:
                     self._adapter._loop.run_until_complete(self._adapter._command_callback("<< " + line))
-                self.buffer = ''
+                self.buffer = ""
             else:
                 self.buffer = line
 
@@ -132,7 +134,7 @@ class TcpProtocol(asyncio.Protocol):
         self._adapter.init()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Configure logging
     _LOGGER.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
@@ -145,16 +147,15 @@ if __name__ == '__main__':
             datefmt=None,
             reset=True,
             log_colors={
-                'DEBUG': 'cyan',
-                'INFO': 'green',
-                'WARNING': 'yellow',
-                'ERROR': 'red',
-                'CRITICAL': 'red',
-            }
+                "DEBUG": "cyan",
+                "INFO": "green",
+                "WARNING": "yellow",
+                "ERROR": "red",
+                "CRITICAL": "red",
+            },
         )
     except ImportError:
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     ch.setFormatter(formatter)
     _LOGGER.addHandler(ch)

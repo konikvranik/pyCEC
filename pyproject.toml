@@ -1,5 +1,5 @@
 [build-system]
-requires = [ "hatchling", "pytest"]
+requires = ["hatchling", "pytest"]
 build-backend = "hatchling.build"
 
 [project]
@@ -7,11 +7,15 @@ name = "pyCEC"
 version = "0.6.0"
 description = "Provide HDMI CEC devices as objects, especially for use with Home Assistant"
 authors = [
-    {name = "Petr Vraník", email = "hpa@suteren.net"}
+    { name = "Petr Vraník", email = "hpa@suteren.net" }
 ]
-license = {text = "MIT"}
+license = { text = "MIT" }
 readme = "README.rst"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
+[project.optional-dependencies]
+dev = [
+    "Kodistubs>=20.0.0",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Topic :: Utilities",
@@ -26,7 +30,14 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
-keywords = ["cec", "hdmi", "home-assistant"]
+keywords = [
+    "libcec",
+    "cec",
+    "hdmi",
+    "home-assistant",
+    "kodi",
+    "xbmc",
+]
 
 [project.urls]
 Homepage = "https://github.com/konikvranik/pyCEC/"
@@ -41,8 +52,8 @@ testpaths = ["tests"]
 norecursedirs = [".git", "testing_config"]
 
 [tool.black]
-line-length = 79
+line-length = 120
 
 [tool.flake8]
 max-line-length = 120
-exclude = [".venv/", ".git/", "__pycache__/", "*.egg-info
+exclude = [".venv/", ".git/", "__pycache__/", "*.egg-info"]

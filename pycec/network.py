@@ -6,28 +6,44 @@ from typing import List
 
 from pycec import _LOGGER
 from pycec.commands import CecCommand
-from pycec.const import CMD_OSD_NAME, VENDORS, DEVICE_TYPE_NAMES, \
-    CMD_ACTIVE_SOURCE, CMD_STREAM_PATH, ADDR_BROADCAST, CMD_DECK_STATUS, \
-    CMD_AUDIO_STATUS
+from pycec.const import (
+    CMD_OSD_NAME,
+    VENDORS,
+    DEVICE_TYPE_NAMES,
+    CMD_ACTIVE_SOURCE,
+    CMD_STREAM_PATH,
+    ADDR_BROADCAST,
+    CMD_DECK_STATUS,
+    CMD_AUDIO_STATUS,
+)
 from pycec.const import CMD_PHYSICAL_ADDRESS, CMD_POWER_STATUS, CMD_VENDOR
 
 DEFAULT_SCAN_INTERVAL = 30
 DEFAULT_UPDATE_PERIOD = 30
 DEFAULT_SCAN_DELAY = 1
 
-UPDATEABLE = {CMD_POWER_STATUS: "_update_power_status",
-              CMD_OSD_NAME: "_update_osd_name", CMD_VENDOR: "_update_vendor",
-              CMD_PHYSICAL_ADDRESS: "_update_physical_address",
-              CMD_DECK_STATUS: "_update_playing_status",
-              CMD_AUDIO_STATUS: "_update_audio_status"}
+UPDATEABLE = {
+    CMD_POWER_STATUS: "_update_power_status",
+    CMD_OSD_NAME: "_update_osd_name",
+    CMD_VENDOR: "_update_vendor",
+    CMD_PHYSICAL_ADDRESS: "_update_physical_address",
+    CMD_DECK_STATUS: "_update_playing_status",
+    CMD_AUDIO_STATUS: "_update_audio_status",
+}
 
 
 class PhysicalAddress:
     def __init__(self, address):
         self._physical_address = int()
         if isinstance(address, (str,)):
-            address = int(address.replace('.', '').replace(':', ''), 16)
-        if isinstance(address, (tuple, list,)):
+            address = int(address.replace(".", "").replace(":", ""), 16)
+        if isinstance(
+            address,
+            (
+                tuple,
+                list,
+            ),
+        ):
             if len(address) == 2:
                 self._physical_address = int("%02x%02x" % tuple(address), 16)
             elif len(address) == 4:
@@ -39,8 +55,7 @@ class PhysicalAddress:
 
     @property
     def asattr(self) -> List[int]:
-        return [self._physical_address // 0x100,
-                self._physical_address % 0x100]
+        return [self._physical_address // 0x100, self._physical_address % 0x100]
 
     @property
     def asint(self) -> int:
@@ -276,9 +291,7 @@ class HDMIDevice:
     :type _task: asyncio.Task
     """
 
-    def __init__(self, logical_address: int, network=None,
-                 update_period=DEFAULT_UPDATE_PERIOD,
-                 loop=None):
+    def __init__(self, logical_address: int, network=None, update_period=DEFAULT_UPDATE_PERIOD, loop=None):
         self._loop = loop
         self._logical_address = logical_address
         self.name = "hdmi_%x" % logical_address
@@ -329,9 +342,7 @@ class HDMIDevice:
 
     @property
     def vendor(self) -> str:
-        return (
-            VENDORS[self._vendor_id] if self._vendor_id in VENDORS else hex(
-                self._vendor_id))
+        return VENDORS[self._vendor_id] if self._vendor_id in VENDORS else hex(self._vendor_id)
 
     @property
     def osd_name(self) -> str:
@@ -349,14 +360,14 @@ class HDMIDevice:
         self._loop.create_task(self.async_turn_on())
 
     async def async_turn_on(self):  # pragma: no cover
-        command = CecCommand(0x44, self.logical_address, att=[0x6d])
+        command = CecCommand(0x44, self.logical_address, att=[0x6D])
         await self.async_send_command(command)
 
     def turn_off(self):  # pragma: no cover
         self._loop.create_task(self.async_turn_off())
 
     async def async_turn_off(self):  # pragma: no cover
-        command = CecCommand(0x44, self.logical_address, att=[0x6c])
+        command = CecCommand(0x44, self.logical_address, att=[0x6C])
         await self.async_send_command(command)
 
     def toggle(self):  # pragma: no cover
@@ -372,9 +383,7 @@ class HDMIDevice:
 
     @property
     def type_name(self):
-        return (
-            DEVICE_TYPE_NAMES[self.type] if self.type in range(6) else
-            DEVICE_TYPE_NAMES[2])
+        return DEVICE_TYPE_NAMES[self.type] if self.type in range(6) else DEVICE_TYPE_NAMES[2]
 
     @property
     def mute_status(self) -> bool:
@@ -470,8 +479,7 @@ class HDMIDevice:
         await self._network.async_send_command(command)
 
     def active_source(self):
-        self._loop.create_task(
-            self._network.async_active_source(self.physical_address))
+        self._loop.create_task(self._network.async_active_source(self.physical_address))
 
     @property
     def is_updated(self, cmd):
@@ -484,8 +492,8 @@ class HDMIDevice:
 
     def _update_audio_status(self, command):
         self._mute_status = bool(command.att[0] & 0x80)
-        raw_volume_status = command.att[0] & 0x7f
-        if raw_volume_status == 0x7f:
+        raw_volume_status = command.att[0] & 0x7F
+        if raw_volume_status == 0x7F:
             # Volume is unknown
             self._updates[CMD_AUDIO_STATUS[0]] = False
         else:
@@ -493,16 +501,19 @@ class HDMIDevice:
             self._volume_status = min(raw_volume_status, 100)
 
     def __eq__(self, other):
-        return (isinstance(other, (
-            HDMIDevice,)) and self.logical_address == other.logical_address)
+        return isinstance(other, (HDMIDevice,)) and self.logical_address == other.logical_address
 
     def __hash__(self):
         return self._logical_address
 
     def __str__(self):
         return "HDMI %d: %s, %s (%s), power %s" % (
-            self.logical_address, self.vendor, self.osd_name,
-            str(self.physical_address), self.power_status)
+            self.logical_address,
+            self.vendor,
+            self.osd_name,
+            str(self.physical_address),
+            self.power_status,
+        )
 
     def set_update_callback(self, callback):  # pragma: no cover
         self._update_callback = callback
@@ -544,8 +555,7 @@ class HDMINetwork:
     ```
     """
 
-    def __init__(self, adapter: AbstractCecAdapter, loop: AbstractEventLoop,
-                 scan_interval=DEFAULT_SCAN_INTERVAL):
+    def __init__(self, adapter: AbstractCecAdapter, loop: AbstractEventLoop, scan_interval=DEFAULT_SCAN_INTERVAL):
         self._running = False
         self._device_status = dict()
         self._loop = loop
@@ -589,7 +599,7 @@ class HDMINetwork:
                 self.get_device(addr).stop()
                 if self._device_removed_callback:
                     self._loop.call_soon_threadsafe(self._device_removed_callback, self._devices[addr])
-                del (self._devices[addr])
+                del self._devices[addr]
 
     def send_command(self, command):
         self._loop.create_task(self.async_send_command(command))
@@ -598,7 +608,7 @@ class HDMINetwork:
         if isinstance(command, str):
             command = CecCommand(command)
         _LOGGER.debug("<< %s", command)
-        if command.src is None or command.src == 0xf:
+        if command.src is None or command.src == 0xF:
             command.src = self._adapter.get_logical_address()
         await self._adapter.async_transmit(command)
 
@@ -620,10 +630,8 @@ class HDMINetwork:
         self._loop.create_task(self.async_active_source(source))
 
     async def async_active_source(self, addr: PhysicalAddress):
-        await self.async_send_command(
-            CecCommand(CMD_ACTIVE_SOURCE, ADDR_BROADCAST, att=addr.asattr))
-        await self.async_send_command(
-            CecCommand(CMD_STREAM_PATH, ADDR_BROADCAST, att=addr.asattr))
+        await self.async_send_command(CecCommand(CMD_ACTIVE_SOURCE, ADDR_BROADCAST, att=addr.asattr))
+        await self.async_send_command(CecCommand(CMD_STREAM_PATH, ADDR_BROADCAST, att=addr.asattr))
 
     @property
     def devices(self) -> tuple:
@@ -654,10 +662,7 @@ class HDMINetwork:
                 await self.async_scan()
                 _LOGGER.debug("Sleep...")  # pragma: no cover
                 start_time = self._loop.time()
-                while (
-                        self._loop.time() <= (start_time + self._scan_interval)
-                        and self._running
-                ):
+                while self._loop.time() <= (start_time + self._scan_interval) and self._running:
                     await asyncio.sleep(0.3)
             else:
                 _LOGGER.warning("Not initialized. Waiting for init.")
@@ -700,5 +705,5 @@ class HDMINetwork:
 
 
 def _to_digits(x: int):
-    for x in ("%04x" % x):
+    for x in "%04x" % x:
         yield int(x, 16)
