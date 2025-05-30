@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from setuptools import setup, find_packages
 import os
+
+from setuptools import setup, find_packages
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(this_dir, "README.rst"), "r") as f:
@@ -15,10 +16,7 @@ setup(
     version="0.6.0",
     author="Petr Vraník",
     author_email="hpa@suteren.net",
-    description=(
-        "Provide HDMI CEC devices as objects,"
-        " especially for use with Home Assistant"
-    ),
+    description=("Provide HDMI CEC devices as objects," " especially for use with Home Assistant"),
     license="MIT",
     keywords="cec hdmi home-assistant",
     url="https://github.com/konikvranik/pycec/",

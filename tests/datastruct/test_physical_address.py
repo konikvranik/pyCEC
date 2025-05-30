@@ -1,4 +1,5 @@
 import pytest
+
 from pycec.network import PhysicalAddress
 
 
