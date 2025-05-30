@@ -95,7 +95,7 @@ class CecServerService(xbmc.Monitor):
         log(f"Starting CEC TCP Server on {host}:{port}")
 
         try:
-            self.server = CECServer()
+            self.server = CECServer(loop)
             self.server.start(host, port)
             log("CEC TCP Server started successfully")
         except Exception as e:

@@ -20,7 +20,6 @@ class TcpAdapter(AbstractCecAdapter):
     def __init__(self, host, port=DEFAULT_PORT, name=None, activate_source=None):
         super().__init__()
         self._polling = dict()
-        self._tcp_loop = asyncio.new_event_loop()
         self._host = host
         self._port = port
         self._transport: Transport = None
@@ -32,7 +31,7 @@ class TcpAdapter(AbstractCecAdapter):
 
         for i in range(0, MAX_CONNECTION_ATTEMPTS):
             try:
-                self._transport, protocol = await self._tcp_loop.create_connection(lambda: TcpProtocol(self), host=self._host, port=self._port)
+                self._transport, protocol = await asyncio.get_running_loop().create_connection(lambda: TcpProtocol(self), host=self._host, port=self._port)
                 _LOGGER.debug("Connection started.")
                 break
             except (ConnectionRefusedError, RuntimeError) as e:
@@ -49,7 +48,6 @@ class TcpAdapter(AbstractCecAdapter):
         if self._transport:
             _LOGGER.debug("New client: %s", self._transport)
             self._initialized = True
-            self._tcp_loop.run_in_executor(None, self._tcp_loop.run_forever)
         if callback:
             callback()
 
@@ -57,16 +55,16 @@ class TcpAdapter(AbstractCecAdapter):
         self._initialized = False
         if self._transport is not None:
             if not self._transport.is_closing():
-                await self._loop.run_in_executor(self._transport.close)
+                await asyncio.get_running_loop().run_in_executor(self._transport.close)
         self._transport = None
 
     async def async_poll_device(self, device):
-        timestamp = self._loop.time()
+        timestamp = asyncio.get_running_loop().time()
         poll_bucket = self._polling.get(device, set())
         poll_bucket.add(timestamp)
         self._polling.update({device: poll_bucket})
         await self.async_transmit(PollCommand(device))
-        while self._loop.time() < (timestamp + 5):
+        while asyncio.get_running_loop().time() < (timestamp + 5):
             if timestamp not in self._polling.get(device, set()):
                 _LOGGER.debug("Found device %d.", device)
                 return True
@@ -81,7 +79,7 @@ class TcpAdapter(AbstractCecAdapter):
 
     async def async_transmit(self, command: CecCommand):
         if self._transport is not None:
-            self._loop.run_in_executor(None, self._transport.write, ("%s\r\n" % command.raw).encode())
+            asyncio.get_running_loop().run_in_executor(None, self._transport.write, ("%s\r\n" % command.raw).encode())
         else:
             _LOGGER.error("Can not transmit command. Transport is not initialized.")
 
@@ -103,7 +101,6 @@ class TcpProtocol(asyncio.Protocol):
 
     def __init__(self, adapter: TcpAdapter):
         self._adapter = adapter
-        self._loop = adapter._loop
 
     def connection_made(self, transport):
         self._adapter.transport = transport
@@ -119,25 +116,28 @@ class TcpProtocol(asyncio.Protocol):
                     if cmd.src in self._adapter._polling:
                         del self._adapter._polling[cmd.src]
                 else:
-                    self._adapter._loop.run_until_complete(self._adapter._command_callback("<< " + line))
+                    asyncio.create_task(self._adapter._command_callback("<< " + line))
                 self.buffer = ""
             else:
                 self.buffer = line
 
     def eof_received(self):
-        self._adapter.async_shutdown()
+        asyncio.create_task(self._adapter.async_shutdown())
+
+    async def restart_server(self):
+        await self._adapter.async_shutdown()
+        await self._adapter.async_init()
 
     def connection_lost(self, exc):
         _LOGGER.warning("Connection lost. Trying to reconnect...")
-        self._adapter.async_shutdown()
-        self._adapter._tcp_loop.stop()
-        self._adapter.init()
+        asyncio.create_task(self.restart_server())
 
 
-def client(loop, host=LOCALHOST, port=DEFAULT_PORT):
-    hdmi_network = HDMINetwork(TcpAdapter(host, port=port, name="cli", activate_source=False), loop)
-    loop.run_until_complete(hdmi_network.async_init())
-    loop.create_task(hdmi_network.async_watch())
+async def async_client(host=LOCALHOST, port=DEFAULT_PORT):
+    hdmi_network = HDMINetwork(TcpAdapter(host, port=port, name="cli", activate_source=False))
+    if not await hdmi_network.async_init():
+        return
+    await hdmi_network.async_watch()
     try:
         while True:
             for d in hdmi_network.devices:
@@ -145,17 +145,15 @@ def client(loop, host=LOCALHOST, port=DEFAULT_PORT):
             time.sleep(7)
     except KeyboardInterrupt:
         pass
-    hdmi_network.async_shutdown()
+    await hdmi_network.async_shutdown()
 
 
 if __name__ == "__main__":
     config = configure()
     setup_logger(config)
-    loop = asyncio.get_event_loop()
-    client(
-        loop,
-        config[CONF_DEFAULT][CONF_HOST] if CONF_HOST in config[CONF_DEFAULT] else LOCALHOST,
-        config[CONF_DEFAULT][CONF_PORT] if CONF_PORT in config[CONF_DEFAULT] else DEFAULT_PORT,
+    asyncio.run(
+        async_client(
+            config[CONF_DEFAULT][CONF_HOST] if CONF_HOST in config[CONF_DEFAULT] else LOCALHOST,
+            config[CONF_DEFAULT][CONF_PORT] if CONF_PORT in config[CONF_DEFAULT] else DEFAULT_PORT,
+        )
     )
-    loop.stop()
-    loop.close()
