@@ -1,5 +1,4 @@
 import asyncio
-import time
 from asyncio import AbstractEventLoop
 from functools import reduce
 from multiprocessing import Queue
@@ -49,8 +48,7 @@ class PhysicalAddress:
 
     @property
     def ascmd(self) -> str:
-        return "%x%x:%x%x" % tuple(
-            x for x in _to_digits(self._physical_address))
+        return "%x%x:%x%x" % tuple(x for x in _to_digits(self._physical_address))
 
     @property
     def asstr(self) -> str:
@@ -137,23 +135,9 @@ class AbstractCecAdapter:
         :type command: CecCommand
         :return: None
         """
-        await self._loop.run_in_executor(None, self.transmit, command)
-
-    def transmit(self, command: CecCommand):
-        """
-        Transmits a given CEC command using the underlying implementation.
-
-        The provided command will be used to perform an operation through
-        the relevant consumer electronics control interface implementation.
-
-        :param command: The CEC command to be transmitted. This should be an
-            instance of the `CecCommand` class.
-        :raises NotImplementedError: Always raised in the base implementation
-            indicating that this method must be implemented in a subclass.
-        """
         raise NotImplementedError
 
-    def standby_devices(self):
+    async def async_standby_devices(self):
         """
         Places devices into standby mode. This function defines the specific logic for entering standby mode.
 
@@ -163,7 +147,7 @@ class AbstractCecAdapter:
         """
         raise NotImplementedError
 
-    def power_on_devices(self):
+    async def async_power_on_devices(self):
         """
         Power on the devices managed by this instance.
 
@@ -188,7 +172,7 @@ class AbstractCecAdapter:
         """
         self._command_callback = callback
 
-    def shutdown(self):
+    async def async_shutdown(self):
         """
         Shuts down the operation of a component or service implementing this method.
 
@@ -541,8 +525,6 @@ class HDMINetwork:
     :type _loop: asyncio.AbstractEventLoop
     :ivar _running: Indicates whether the HDMI network is currently running.
     :type _running: bool
-    :ivar _managed_loop: Specifies if the loop is managed internally or shared externally.
-    :type _managed_loop: bool
     :ivar _scan_delay: The delay duration to apply during scanning operations.
     :type _scan_delay: float
     :ivar _scan_interval: Interval between scan operations for detecting devices.
@@ -564,16 +546,11 @@ class HDMINetwork:
     ```
     """
 
-    def __init__(self, adapter: AbstractCecAdapter,
-                 scan_interval=DEFAULT_SCAN_INTERVAL, loop: AbstractEventLoop = None):
+    def __init__(self, adapter: AbstractCecAdapter, loop: AbstractEventLoop,
+                 scan_interval=DEFAULT_SCAN_INTERVAL):
         self._running = False
         self._device_status = dict()
-        self._managed_loop = loop is None
-        if self._managed_loop:
-            self._loop = asyncio.new_event_loop()
-        else:
-            _LOGGER.warning("Be aware! Network is using shared event loop!")
-            self._loop = loop
+        self._loop = loop
         self._adapter = adapter
         self._adapter.set_event_loop(self._loop)
         self._scan_delay = DEFAULT_SCAN_DELAY
@@ -589,14 +566,9 @@ class HDMINetwork:
     def initialized(self):
         return self._adapter.initialized
 
-    def init(self):
-        self._loop.create_task(self.async_init())
-
     async def async_init(self):
         _LOGGER.debug("initializing")  # pragma: no cover
-        _LOGGER.debug("setting callback")  # pragma: no cover
         self._adapter.set_command_callback(self.command_callback)
-        _LOGGER.debug("Callback set")  # pragma: no cover
         await self._adapter.async_init(self._initialized_callback)
         self._running = True
         _LOGGER.debug("Init done")  # pragma: no cover
@@ -665,6 +637,17 @@ class HDMINetwork:
         return self._devices.get(i, None)
 
     async def async_watch(self, loop=None):
+        """
+        Watches asynchronously and performs scanning at regular intervals or until stopped. If the instance is not
+        initialized, it waits for the initialization before starting the scanning process. The method operates within
+        an event loop and maintains its operation based on the provided or internal loop object.
+
+        :param loop: Event loop used for running asynchronous operations. If not provided, it defaults to the instance's
+                     internal loop.
+        :type loop: asyncio.AbstractEventLoop, optional
+        :return: None
+        :rtype: None
+        """
         _LOGGER.debug("Start watching...")  # pragma: no cover
         if loop is None:
             loop = self._loop
@@ -685,14 +668,6 @@ class HDMINetwork:
                 await asyncio.sleep(1)
         _LOGGER.info("No watching anymore")
 
-    def start(self):
-        _LOGGER.info("HDMI network starting...")  # pragma: no cover
-        self._running = True
-        self._loop.create_task(self.async_init())
-        self._loop.create_task(self.async_watch())
-        if self._managed_loop:
-            self._loop.run_in_executor(None, self._loop.run_forever)
-
     def command_callback(self, raw_command):
         _LOGGER.debug("%s", raw_command)  # pragma: no cover
         self._loop.call_soon_threadsafe(self._async_callback, raw_command)
@@ -711,17 +686,12 @@ class HDMINetwork:
             if self._command_callback:
                 self._loop.call_soon_threadsafe(self._command_callback, command)
 
-    def stop(self):
+    async def async_shutdown(self):
         _LOGGER.debug("HDMI network shutdown.")  # pragma: no cover
         self._running = False
         for d in self._devices.values():
             d.stop()
-        if self._managed_loop:
-            self._loop.stop()
-            while self._loop.is_running():
-                time.sleep(.1)
-            self._loop.close()
-        self._adapter.shutdown()
+        await self._adapter.async_shutdown()
         _LOGGER.info("HDMI network stopped.")  # pragma: no cover
 
     def set_command_callback(self, callback):
@@ -737,6 +707,6 @@ class HDMINetwork:
         self._initialized_callback = callback
 
 
-def _to_digits(x: int) -> List[int]:
+def _to_digits(x: int):
     for x in ("%04x" % x):
         yield int(x, 16)

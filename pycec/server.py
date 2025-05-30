@@ -55,7 +55,7 @@ class CECServer:
     def __init__(self, adapter, loop=asyncio.get_event_loop()):
         self._loop = loop
         self._adapter = adapter
-        self._network = HDMINetwork(self._adapter, loop=self._loop)
+        self._network = HDMINetwork(self._adapter, self._loop)
         self._connections = set()
         self._server: Server = None
 

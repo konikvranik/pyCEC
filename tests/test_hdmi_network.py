@@ -49,8 +49,8 @@ def test_devices():
     for i in [2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14]:
         assert HDMIDevice(i) not in network.devices
     for d in network.devices:
-        d.stop()
-    network.stop()
+        d.async_shutdown()
+    network.async_shutdown()
     loop.stop()
     loop.run_forever()
 
@@ -106,8 +106,8 @@ def test_scan():
     assert "Test3" == device.osd_name
     assert 2 == device.power_status
     for d in network.devices:
-        d.stop()
-    network.stop()
+        d.async_shutdown()
+    network.async_shutdown()
     loop.stop()
     loop.run_forever()
 
@@ -117,17 +117,17 @@ class MockAdapter(AbstractCecAdapter):
         self._data = data
         super().__init__()
 
-    def shutdown(self):
+    async def async_shutdown(self):
         pass
 
     async def async_init(self, callback: callable = None):
         self._initialized = True
         return True
 
-    def power_on_devices(self):
+    async def async_power_on_devices(self):
         pass
 
-    def standby_devices(self):
+    async def async_standby_devices(self):
         pass
 
     def async_poll_device(self, i):
@@ -135,7 +135,7 @@ class MockAdapter(AbstractCecAdapter):
         f.set_result(self._data[i])
         return f
 
-    def transmit(self, command):
+    async def async_transmit(self, command):
         cmd = None
         att = None
         if command.cmd == CMD_POWER_STATUS[0]:
