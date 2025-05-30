@@ -115,17 +115,14 @@ def test_scan():
 class MockAdapter(AbstractCecAdapter):
     def __init__(self, data):
         self._data = data
-        self._command_callback = None
         super().__init__()
 
     def shutdown(self):
         pass
 
-    def init(self, callback: callable = None):
-        f = asyncio.Future()
-        f.set_result(True)
+    async def async_init(self, callback: callable = None):
         self._initialized = True
-        return f
+        return True
 
     def power_on_devices(self):
         pass
@@ -133,10 +130,7 @@ class MockAdapter(AbstractCecAdapter):
     def standby_devices(self):
         pass
 
-    def set_command_callback(self, callback):
-        self._command_callback = callback
-
-    def poll_device(self, i):
+    def async_poll_device(self, i):
         f = asyncio.Future()
         f.set_result(self._data[i])
         return f

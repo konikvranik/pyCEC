@@ -1,6 +1,5 @@
-from concurrent.futures import ThreadPoolExecutor
-
 import logging
+from concurrent.futures import ThreadPoolExecutor
 
 from pycec.commands import CecCommand, KeyPressCommand
 from pycec.const import VENDORS, ADDR_RECORDINGDEVICE1
@@ -32,12 +31,10 @@ class CecAdapter(AbstractCecAdapter):
         self._cecconfig.SetCommandCallback(callback)
 
     def standby_devices(self):
-        self._loop.run_in_executor(self._io_executor,
-                                   self._adapter.StandbyDevices)
+        self._loop.run_in_executor(self._io_executor, self._adapter.StandbyDevices)
 
-    def poll_device(self, device):
-        return self._loop.run_in_executor(
-            self._io_executor, self._adapter.PollDevice, device)
+    async def async_poll_device(self, device):
+        return await self._loop.run_in_executor(self._io_executor, self._adapter.PollDevice, device)
 
     def shutdown(self):
         self._io_executor.shutdown()
@@ -48,39 +45,31 @@ class CecAdapter(AbstractCecAdapter):
         return self._adapter.GetLogicalAddresses().primary
 
     def power_on_devices(self):
-        self._loop.run_in_executor(self._io_executor,
-                                   self._adapter.PowerOnDevices)
+        self._loop.run_in_executor(self._io_executor, self._adapter.PowerOnDevices)
 
-    def transmit(self, command: CecCommand):
-        self._loop.run_in_executor(
-            self._io_executor, self._adapter.Transmit,
-            self._adapter.CommandFromString(command.raw))
+    async def async_transmit(self, command: CecCommand):
+        await self._loop.run_in_executor(self._io_executor, self._adapter.Transmit,
+                                         self._adapter.CommandFromString(command.raw))
 
-    def init(self, callback: callable = None):
-        return self._loop.run_in_executor(self._io_executor, self._init,
-                                          callback)
-
-    def _init(self, callback: callable = None):
+    async def async_init(self, callback: callable = None):
         import cec
         if not self._cecconfig.clientVersion:
             self._cecconfig.clientVersion = cec.LIBCEC_VERSION_CURRENT
         _LOGGER.debug("Initializing CEC...")
-        adapter = cec.ICECAdapter.Create(self._cecconfig)
+        adapter = await self._loop.run_in_executor(self._io_executor, cec.ICECAdapter.Create, self._cecconfig)
         _LOGGER.debug("Created adapter")
         a = None
-        adapters = adapter.DetectAdapters()
+        adapters = await self._loop.run_in_executor(self._io_executor, adapter.DetectAdapters)
         for a in adapters:
             _LOGGER.info("found a CEC adapter:")
             _LOGGER.info("port:     " + a.strComName)
-            _LOGGER.info("vendor:   " + (
-                VENDORS[a.iVendorId] if a.iVendorId in VENDORS else hex(
-                    a.iVendorId)))
+            _LOGGER.info("vendor:   " + (VENDORS[a.iVendorId] if a.iVendorId in VENDORS else hex(a.iVendorId)))
             _LOGGER.info("product:  " + hex(a.iProductId))
             a = a.strComName
         if a is None:
             _LOGGER.warning("No adapters found")
         else:
-            if adapter.Open(a):
+            if await self._loop.run_in_executor(self._io_executor, adapter.Open, a):
                 _LOGGER.info("connection opened")
                 self._adapter = adapter
                 self._initialized = True
