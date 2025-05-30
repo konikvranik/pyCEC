@@ -3,6 +3,8 @@ import logging
 import time
 from asyncio import Transport
 
+from pycec import LOCALHOST, CONF_DEFAULT, CONF_HOST, CONF_PORT
+from pycec.__main__ import configure, setup_logger
 from pycec.commands import CecCommand, KeyPressCommand, KeyReleaseCommand, PollCommand
 from pycec.const import CMD_STANDBY, KEY_POWER
 from pycec.network import AbstractCecAdapter, HDMINetwork
@@ -132,43 +134,28 @@ class TcpProtocol(asyncio.Protocol):
         self._adapter.init()
 
 
-if __name__ == "__main__":
-    # Configure logging
-    _LOGGER.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    try:
-        from colorlog import ColoredFormatter
-
-        formatter = ColoredFormatter(
-            "%(log_color)s%(levelname)-8s %(message)s",
-            datefmt=None,
-            reset=True,
-            log_colors={
-                "DEBUG": "cyan",
-                "INFO": "green",
-                "WARNING": "yellow",
-                "ERROR": "red",
-                "CRITICAL": "red",
-            },
-        )
-    except ImportError:
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-
-    ch.setFormatter(formatter)
-    _LOGGER.addHandler(ch)
-
-    tcp_adapter = TcpAdapter("192.168.1.5", name="HASS", activate_source=False)
-    loop = asyncio.get_event_loop()
-    hdmi_network = HDMINetwork(tcp_adapter, loop)
+def client(loop, host=LOCALHOST, port=DEFAULT_PORT):
+    hdmi_network = HDMINetwork(TcpAdapter(host, port=port, name="cli", activate_source=False), loop)
     loop.run_until_complete(hdmi_network.async_init())
     loop.create_task(hdmi_network.async_watch())
     try:
         while True:
             for d in hdmi_network.devices:
                 _LOGGER.info("Device: %s", d)
-
             time.sleep(7)
     except KeyboardInterrupt:
         pass
     hdmi_network.async_shutdown()
+
+
+if __name__ == "__main__":
+    config = configure()
+    setup_logger(config)
+    loop = asyncio.get_event_loop()
+    client(
+        loop,
+        config[CONF_DEFAULT][CONF_HOST] if CONF_HOST in config[CONF_DEFAULT] else LOCALHOST,
+        config[CONF_DEFAULT][CONF_PORT] if CONF_PORT in config[CONF_DEFAULT] else DEFAULT_PORT,
+    )
+    loop.stop()
+    loop.close()
