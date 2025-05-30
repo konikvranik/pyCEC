@@ -1,32 +1,15 @@
 name: Tests
 
-on: [push, pull_request]
+on: [ push, pull_request ]
+
 
 jobs:
   pytest:
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
-        os: [ubuntu-20.04, ubuntu-latest]
-        exclude:
-          # Python 3.7 není dostupný na nejnovějším Ubuntu
-          - os: ubuntu-latest
-            python-version: "3.7"
-          # Zbytečně neduplikujeme testy pro 3.8-3.11 na starším Ubuntu
-          - os: ubuntu-20.04
-            python-version: "3.8"
-          - os: ubuntu-20.04
-            python-version: "3.9"
-          - os: ubuntu-20.04
-            python-version: "3.10"
-          - os: ubuntu-20.04
-            python-version: "3.11"
-          - os: ubuntu-20.04
-            python-version: "3.12"
-          - os: ubuntu-20.04
-            python-version: "3.13"
-    runs-on: ${{ matrix.os }}
+        python-version: [ "3.8", "3.9", "3.10", "3.11", "3.12", "3.13" ]
     steps:
       - uses: actions/checkout@v3
       - name: Setup Python ${{ matrix.python-version }}
