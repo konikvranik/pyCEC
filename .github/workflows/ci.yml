@@ -4,10 +4,29 @@ on: [push, pull_request]
 
 jobs:
   pytest:
-    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        os: [ubuntu-20.04, ubuntu-latest]
+        exclude:
+          # Python 3.7 není dostupný na nejnovějším Ubuntu
+          - os: ubuntu-latest
+            python-version: "3.7"
+          # Zbytečně neduplikujeme testy pro 3.8-3.11 na starším Ubuntu
+          - os: ubuntu-20.04
+            python-version: "3.8"
+          - os: ubuntu-20.04
+            python-version: "3.9"
+          - os: ubuntu-20.04
+            python-version: "3.10"
+          - os: ubuntu-20.04
+            python-version: "3.11"
+          - os: ubuntu-20.04
+            python-version: "3.12"
+          - os: ubuntu-20.04
+            python-version: "3.13"
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
       - name: Setup Python ${{ matrix.python-version }}
@@ -26,7 +45,7 @@ jobs:
         run: coveralls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COVERALLS_FLAG_NAME: ${{ matrix.python-version }}
+          COVERALLS_FLAG_NAME: python-${{ matrix.python-version }}-${{ matrix.os }}
           COVERALLS_PARALLEL: true
       - name: Test Build
         run: |
@@ -37,13 +56,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Setup Python 3.9
+      - name: Setup Python 3.10
         uses: actions/setup-python@v4
         with:
-          python-version: 3.9
+          python-version: "3.10"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r lint_requirements.txt
       - name: Run Flake8
         run: flake8 .
+
+  coveralls-finish:
+    needs: pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install coveralls==2.1.2
+      - name: Coveralls Finished
+        run: coveralls --finish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
