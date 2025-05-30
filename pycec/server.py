@@ -1,6 +1,5 @@
 import asyncio
-import functools
-from asyncio import Transport, futures, Server
+from asyncio import Transport, Server
 
 from pycec import _LOGGER
 from pycec.commands import CecCommand, PollCommand
@@ -29,12 +28,15 @@ class CECServerProtocol(asyncio.Protocol):
                 if len(line) == 2:
                     _LOGGER.info("Received poll %s from %s", line, self._transport.get_extra_info('peername'))
                     device = CecCommand(line).dst
-                    t: futures.Future = self._hdmi_network._adapter.async_poll_device(device)
-                    t.add_done_callback(functools.partial(self._after_poll, device))
-                else:
-                    _LOGGER.info("Received command %s from %s", line, self._transport.get_extra_info('peername'))
-                    self._hdmi_network.send_command(CecCommand(line))
-                self.buffer = ''
+                    with self._hdmi_network._adapter.async_poll_device(device) as t:
+                        if t:
+                            self.send_command_to_tcp(
+                                PollCommand(self._hdmi_network._adapter.get_logical_address(), src=device))
+                        else:
+                            _LOGGER.info("Received command %s from %s", line,
+                                         self._transport.get_extra_info('peername'))
+                            self._hdmi_network.send_command(CecCommand(line))
+                        self.buffer = ''
             else:
                 self.buffer = line
 
