@@ -6,7 +6,9 @@
 	<extension point="xbmc.service" library="kodi_cec.py" start="login"/>
 	<extension point="xbmc.addon.metadata">
 		<summary lang="en_GB">CEC TCP Server for Kodi</summary>
-		<description lang="en_GB">Provides a TCP server to send and receive CEC commands to HDMI devices connected to Kodi.</description>
+		<description lang="en_GB">Provides a TCP server to send and receive CEC commands to HDMI devices connected to
+			Kodi.
+		</description>
 		<platform>all</platform>
 		<language>en</language>
 		<license>MIT</license>

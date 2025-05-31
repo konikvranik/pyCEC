@@ -11,10 +11,11 @@
 
 The purpose of this project is:
 
-🔹 to provide an object-based API to [libcec](https://github.com/Pulse-Eight/libcec)  
-  for the [`hdmi_cec`](https://www.home-assistant.io/integrations/hdmi_cec/) module in **Home Assistant** ([primary goal](https://github.com/konikvranik/pyCEC/projects/1))  
-🔹 to offer a TCP ⇄ HDMI bridge to control CEC devices over network  
-  ([secondary goal](https://github.com/konikvranik/pyCEC/projects/2))
+🔹 to provide an object-based API to [libcec](https://github.com/Pulse-Eight/libcec)  for the [
+`hdmi_cec`](https://www.home-assistant.io/integrations/hdmi_cec/) module in **Home Assistant
+** ([primary goal](https://github.com/konikvranik/pyCEC/projects/1))  
+🔹 to offer a TCP ⇄ HDMI bridge to control CEC devices over
+network  ([secondary goal](https://github.com/konikvranik/pyCEC/projects/2))
 
 ---
 
@@ -37,7 +38,8 @@ pip install pyCEC
 ```
 
 > ⚠️ **libcec must be installed** for direct-mode usage.  
-> Do **not** run `pip install cec` – it will fail. Instead, [compile libcec](https://github.com/Pulse-Eight/libcec#supported-platforms) for your OS.
+> Do **not** run `pip install cec` – it will fail.
+> Instead, [compile libcec](https://github.com/Pulse-Eight/libcec#supported-platforms) for your OS.
 
 ### On Debian/Ubuntu:
 
@@ -102,7 +104,8 @@ This allows you to switch devices on/off or query their state.
 ## 🤝 Contributing
 
 Contributions are welcome!  
-Feel free to [open an issue](https://github.com/konikvranik/pyCEC/issues) or [create a pull request](https://github.com/konikvranik/pyCEC/pulls).
+Feel free to [open an issue](https://github.com/konikvranik/pyCEC/issues)
+or [create a pull request](https://github.com/konikvranik/pyCEC/pulls).
 
 ---
 

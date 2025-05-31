@@ -36,11 +36,11 @@ def log(msg, level=xbmc.LOGINFO):
 
 class KodiAdapter(AbstractCecAdapter):
     def __init__(
-            self,
-            name: str = None,
-            monitor_only: bool = None,
-            activate_source: bool = None,
-            device_type=ADDR_RECORDINGDEVICE1,
+        self,
+        name: str = None,
+        monitor_only: bool = None,
+        activate_source: bool = None,
+        device_type=ADDR_RECORDINGDEVICE1,
     ):
         super().__init__()
 
@@ -98,10 +98,8 @@ class CecServerService(xbmc.Monitor):
         run_coroutine_threadsafe(self._start_server(), self.loop)
 
     async def _start_server(self):
-        self.server = await CECServer(KodiAdapter("CEC server")).async_start(
-            ADDON.getSettingString("interface"),
-            ADDON.getSettingInt("port")
-        )
+        _srv = CECServer(KodiAdapter("CEC server"))
+        self.server = await _srv.async_start(ADDON.getSettingString("interface"), ADDON.getSettingInt("port"))
         log("CEC server started")
 
     async def _stop_server(self):
