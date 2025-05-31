@@ -1,13 +1,11 @@
----
-layout: default
-title: Hlavní stránka
-permalink: /
----
 <style>
+
 .badges {
   display: none;
 }
+
 </style>
+
 <div class="badges">
 
 ![Build Status](https://github.com/konikvranik/pyCEC/workflows/Tests/badge.svg)
