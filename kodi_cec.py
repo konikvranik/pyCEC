@@ -56,7 +56,7 @@ class KodiAdapter(AbstractCecAdapter):
         pass
 
     async def async_power_on_devices(self):
-        await asyncio.get_running_loop().run_in_executor(self._io_executor, self._adapter.PowerOnDevices)
+        pass
 
     async def async_transmit(self, command: CecCommand):
         pass
