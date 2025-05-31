@@ -55,7 +55,7 @@ python3 -m venv venv --system-site-packages
 
 ---
 
-## 🖧 Running the Server
+## 🚀 Running the Server
 
 You can launch the server bridge with:
 
