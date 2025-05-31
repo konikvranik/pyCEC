@@ -3,7 +3,9 @@ plugins:
   - jekyll-remote-theme
 
 title: pyCEC
-description: konikvranik's Kodi addons.
+description: Python libcec binding.
 show_downloads: true
-show_dir_listing: true
-include: [ "repo/zips/**" ]
+
+<style>
+  .badges { display: none; }
+</style>
