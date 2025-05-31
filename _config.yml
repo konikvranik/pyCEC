@@ -6,6 +6,5 @@ title: pyCEC
 description: Python libcec binding.
 show_downloads: true
 
-<style>
-  .badges { display: none; }
-</style>
+include:
+  - hide_badges.css
