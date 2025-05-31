@@ -9,7 +9,7 @@ import xbmc
 import xbmcaddon
 import xbmcvfs
 
-from pycec.commands import CecCommand, KeyPressCommand
+from pycec.commands import CecCommand
 from pycec.const import ADDR_RECORDINGDEVICE1
 from pycec.network import AbstractCecAdapter
 from pycec.server import CECServer
