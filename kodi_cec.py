@@ -86,10 +86,18 @@ class CecServerService(xbmc.Monitor):
         asyncio.set_event_loop(self.loop)
         self.loop.run_forever()
 
-    def start(self):
-        log("Starting CEC TCP Server")
-        run_coroutine_threadsafe(self._start_server(), self.loop)
-        log("CEC TCP Server started")
+def start(self):
+    log("Starting CEC TCP Server")
+    future = run_coroutine_threadsafe(self._start_server(), self.loop)
+
+    def handle_result(fut):
+        try:
+            fut.result()
+        except Exception as e:
+            log(f"Error starting CEC TCP server: {e}", xbmc.LOGERROR)
+
+    future.add_done_callback(handle_result)
+    log("CEC TCP Server started (async task submitted)")
 
     async def _start_server(self):
         _srv = CECServer(KodiAdapter("CEC server"))
