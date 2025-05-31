@@ -8,28 +8,23 @@ from asyncio import AbstractEventLoop, run_coroutine_threadsafe, Server
 import xbmc
 import xbmcaddon
 import xbmcvfs
-from xbmc import log
 
 from pycec.commands import CecCommand, KeyPressCommand
 from pycec.const import ADDR_RECORDINGDEVICE1
 from pycec.network import AbstractCecAdapter
 from pycec.server import CECServer
 
-# Získání instance addonu a cest
 ADDON = xbmcaddon.Addon()
 ADDON_ID = ADDON.getAddonInfo("id")
 ADDON_PATH = xbmcvfs.translatePath(ADDON.getAddonInfo("path"))
 
-# Přidání cest k potřebným knihovnám
 LIB_DIR = os.path.join(ADDON_PATH, "lib")
 RESOURCES_LIB_DIR = os.path.join(ADDON_PATH, "resources", "lib")
 
-# Přidání cest do systémové cesty pro import
 sys.path.insert(0, LIB_DIR)
 sys.path.insert(0, RESOURCES_LIB_DIR)
 
 
-# Logger pro Kodi
 def log(msg, level=xbmc.LOGINFO):
     xbmc.log("[{}] {}".format(ADDON_ID, msg), level)
 
@@ -45,19 +40,16 @@ class KodiAdapter(AbstractCecAdapter):
         super().__init__()
 
     def set_on_command_callback(self, callback):
-        self._cecconfig.SetKeyPressCallback(lambda key, delay: callback(KeyPressCommand(key).raw))
-        self._cecconfig.SetCommandCallback(callback)
+        pass
 
     async def async_standby_devices(self):
-        asyncio.get_running_loop().run_in_executor(self._io_executor, self._adapter.StandbyDevices)
+        pass
 
     async def async_poll_device(self, device):
         return asyncio.get_running_loop().run_in_executor(self._io_executor, self._adapter.PollDevice, device)
 
     async def async_shutdown(self):
-        self._io_executor.shutdown()
-        if self._adapter:
-            self._adapter.Close()
+        pass
 
     def get_logical_address(self):
         return self._adapter.GetLogicalAddresses().primary
@@ -79,9 +71,6 @@ class KodiAdapter(AbstractCecAdapter):
 
 
 class CecServerService(xbmc.Monitor):
-    """
-    Služba Kodi pro spuštění TCP serveru s CEC funkcionalitou
-    """
 
     def __init__(self):
         super().__init__()
@@ -99,8 +88,10 @@ class CecServerService(xbmc.Monitor):
 
     async def _start_server(self):
         _srv = CECServer(KodiAdapter("CEC server"))
-        self.server = await _srv.async_start(ADDON.getSettingString("interface"), ADDON.getSettingInt("port"))
-        log("CEC server started")
+        interface = ADDON.getSettingString("interface")
+        port = ADDON.getSettingInt("port")
+        self.server = await _srv.async_start(interface, port)
+        log("CEC server started on %s:%s" % (interface, port))
 
     async def _stop_server(self):
         if self.server:
@@ -125,8 +116,7 @@ class CecServerService(xbmc.Monitor):
         self.loop_thread.join()
 
 
-# Hlavní funkce addonu
-if __name__ == '__main__':
+if __name__ == "__main__":
     if __name__ == "__main__":
         log(f"Starting {ADDON.getAddonInfo('name')} version {ADDON.getAddonInfo('version')}")
 
@@ -142,4 +132,3 @@ if __name__ == '__main__':
         # Ukončení služby
         service.shutdown()
         log("CEC TCP Server stopped")
-
