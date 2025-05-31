@@ -47,22 +47,22 @@ class KodiAdapter(AbstractCecAdapter):
         pass
 
     async def async_poll_device(self, device):
-        return asyncio.get_running_loop().run_in_executor(self._io_executor, self._adapter.PollDevice, device)
+        pass
 
     async def async_shutdown(self):
         pass
 
     def get_logical_address(self):
-        return self._adapter.GetLogicalAddresses().primary
+        pass
 
     async def async_power_on_devices(self):
         await asyncio.get_running_loop().run_in_executor(self._io_executor, self._adapter.PowerOnDevices)
 
     async def async_transmit(self, command: CecCommand):
-        asyncio.get_running_loop().run_in_executor(self._io_executor, self._adapter.Transmit, self._adapter.CommandFromString(command.raw))
+        pass
 
     async def async_init(self, callback: callable = None):
-        return asyncio.get_running_loop().run_in_executor(self._io_executor, self._init, callback)
+        pass
 
     def _init(self, callback: callable = None):
         log("Initializing CEC...")
