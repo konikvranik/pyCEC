@@ -3,13 +3,12 @@ import logging
 import time
 from asyncio import Transport
 
-from pycec import LOCALHOST, CONF_DEFAULT, CONF_HOST, CONF_PORT
+from pycec import LOCALHOST, CONF_DEFAULT, CONF_HOST, CONF_PORT, DEFAULT_PORT
 from pycec.__main__ import configure, setup_logger
 from pycec.commands import CecCommand, KeyPressCommand, KeyReleaseCommand, PollCommand
 from pycec.const import CMD_STANDBY, KEY_POWER
 from pycec.network import AbstractCecAdapter, HDMINetwork
 
-DEFAULT_PORT = 9526
 MAX_CONNECTION_ATTEMPTS = 5
 CONNECTION_ATTEMPT_DELAY = 3
 _LOGGER = logging.getLogger(__name__)

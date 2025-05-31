@@ -2,7 +2,7 @@
 <settings>
 	<category label="30001">
 		<setting id="interface" type="ipaddress" label="30002" default="0.0.0.0"/>
-		<setting id="port" type="number" label="30003" default="9998"/>
+		<setting id="port" type="number" label="30003" default="0"/>
 		<setting id="loglevel" type="number" label="30004" default="1" min="0" max="3" step="1"/>
 	</category>
 </settings>

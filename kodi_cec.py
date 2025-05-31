@@ -13,6 +13,7 @@ from pycec.commands import CecCommand
 from pycec.const import ADDR_RECORDINGDEVICE1
 from pycec.network import AbstractCecAdapter
 from pycec.server import CECServer
+from pycec.tcp import DEFAULT_PORT
 
 ADDON = xbmcaddon.Addon()
 ADDON_ID = ADDON.getAddonInfo("id")
@@ -94,6 +95,7 @@ class CecServerService(xbmc.Monitor):
         _srv = CECServer(KodiAdapter("CEC server"))
         interface = ADDON.getSettingString("interface")
         port = ADDON.getSettingInt("port")
+        port = port if port else DEFAULT_PORT
         self.server = await _srv.async_start(interface, port)
         log("CEC server started on %s:%s" % (interface, port))
 
