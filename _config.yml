@@ -5,6 +5,3 @@ plugins:
 title: pyCEC
 description: Python libcec binding.
 show_downloads: true
-
-include:
-  - hide_badges.css
