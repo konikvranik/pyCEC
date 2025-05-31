@@ -1,10 +1,10 @@
 <div style="display:none;" class="badges">
 
-![Build Status](https://github.com/konikvranik/pyCEC/workflows/Tests/badge.svg)
-![PyPi Version](https://img.shields.io/pypi/v/pyCEC)
-![Issue Count](https://img.shields.io/github/issues-raw/konikvranik/pyCEC)
-![Coverage Status](https://img.shields.io/coveralls/github/konikvranik/pyCEC)
-
+[![Build Status](https://github.com/konikvranik/pyCEC/workflows/Tests/badge.svg)](https://github.com/konikvranik/pyCEC/actions)
+[![PyPi Version](https://img.shields.io/pypi/v/pyCEC)](https://pypi.org/project/pyCEC/)
+[![Issue Count](https://img.shields.io/github/issues-raw/konikvranik/pyCEC)](https://github.com/konikvranik/pyCEC/issues)
+[![Coverage Status](https://img.shields.io/coveralls/github/konikvranik/pyCEC)](https://coveralls.io/github/konikvranik/pyCEC)
+[![Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 </div>
 
 # `pyCEC` – Python HDMI-CEC Bridge for Kodi & Home Assistant
