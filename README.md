@@ -1,15 +1,8 @@
-<div style="display:none;"><style>
-.badges {
-  display: none;
-}
-</style></div>
-<div class="badges">
-
+<div style="display:none;" class="badges">
 ![Build Status](https://github.com/konikvranik/pyCEC/workflows/Tests/badge.svg)
 ![PyPi Version](https://img.shields.io/pypi/v/pyCEC)
 ![Issue Count](https://img.shields.io/github/issues-raw/konikvranik/pyCEC)
 ![Coverage Status](https://img.shields.io/coveralls/github/konikvranik/pyCEC)
-
 </div>
 
 # `pyCEC` – Python HDMI-CEC Bridge for Kodi & Home Assistant
