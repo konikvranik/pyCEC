@@ -1,11 +1,8 @@
-<style>
-
+<div style="display:none;"><style>
 .badges {
   display: none;
 }
-
-</style>
-
+</style></div>
 <div class="badges">
 
 ![Build Status](https://github.com/konikvranik/pyCEC/workflows/Tests/badge.svg)
