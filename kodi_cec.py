@@ -73,18 +73,22 @@ class KodiAdapter(AbstractCecAdapter):
 class CecServerService(xbmc.Monitor):
 
     def __init__(self):
+        log("Initializing CEC TCP Server service...")
         super().__init__()
         self.loop: AbstractEventLoop = asyncio.new_event_loop()
         self.loop_thread = threading.Thread(target=self._run_loop, daemon=True)
         self.server: Server = None
         self.loop_thread.start()
+        log("CEC TCP Server service initialized")
 
     def _run_loop(self):
         asyncio.set_event_loop(self.loop)
         self.loop.run_forever()
 
     def start(self):
+        log("Starting CEC TCP Server")
         run_coroutine_threadsafe(self._start_server(), self.loop)
+        log("CEC TCP Server started")
 
     async def _start_server(self):
         _srv = CECServer(KodiAdapter("CEC server"))
@@ -116,19 +120,17 @@ class CecServerService(xbmc.Monitor):
         self.loop_thread.join()
 
 
-if __name__ == "__main__":
-    if __name__ == "__main__":
-        log(f"Starting {ADDON.getAddonInfo('name')} version {ADDON.getAddonInfo('version')}")
+log(f"Starting {ADDON.getAddonInfo('name')} version {ADDON.getAddonInfo('version')}")
 
-        # Vytvoření a spuštění služby
-        service = CecServerService()
-        service.start()
+# Vytvoření a spuštění služby
+service = CecServerService()
+service.start()
 
-        # Hlavní smyčka - běží dokud není Kodi ukončeno
-        while not service.abortRequested():
-            if service.waitForAbort(1):
-                break
+# Hlavní smyčka - běží dokud není Kodi ukončeno
+while not service.abortRequested():
+    if service.waitForAbort(1):
+        break
 
-        # Ukončení služby
-        service.shutdown()
-        log("CEC TCP Server stopped")
+# Ukončení služby
+service.shutdown()
+log("CEC TCP Server stopped")
