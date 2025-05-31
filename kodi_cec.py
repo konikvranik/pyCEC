@@ -1,16 +1,16 @@
-# -*- coding: utf-8 -*-
-"""
-Hlavní vstupní bod CEC TCP serveru
-"""
+# ... vše předtím zůstává stejné až po třídu CecServerService ...
 import asyncio
 import os
 import sys
+import threading
+from asyncio import AbstractEventLoop, run_coroutine_threadsafe, Server
 
 import xbmc
 import xbmcaddon
 import xbmcvfs
+from xbmc import log
 
-from pycec.commands import KeyPressCommand, CecCommand
+from pycec.commands import CecCommand, KeyPressCommand
 from pycec.const import ADDR_RECORDINGDEVICE1
 from pycec.network import AbstractCecAdapter
 from pycec.server import CECServer
@@ -36,11 +36,11 @@ def log(msg, level=xbmc.LOGINFO):
 
 class KodiAdapter(AbstractCecAdapter):
     def __init__(
-        self,
-        name: str = None,
-        monitor_only: bool = None,
-        activate_source: bool = None,
-        device_type=ADDR_RECORDINGDEVICE1,
+            self,
+            name: str = None,
+            monitor_only: bool = None,
+            activate_source: bool = None,
+            device_type=ADDR_RECORDINGDEVICE1,
     ):
         super().__init__()
 
@@ -84,51 +84,44 @@ class CecServerService(xbmc.Monitor):
     """
 
     def __init__(self):
-        super(CecServerService, self).__init__()
-        self.server = None
+        super().__init__()
+        self.loop: AbstractEventLoop = asyncio.new_event_loop()
+        self.loop_thread = threading.Thread(target=self._run_loop, daemon=True)
+        self.server: Server = None
+        self.loop_thread.start()
+
+    def _run_loop(self):
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_forever()
 
     def start(self):
-        """Spustí TCP server"""
-        # Získání nastavení
-        host = ADDON.getSetting("host") or "0.0.0.0"
-        port = int(ADDON.getSetting("port") or 9998)
+        run_coroutine_threadsafe(self._start_server(), self.loop)
 
-        log(f"Starting CEC TCP Server on {host}:{port}")
+    async def _start_server(self):
+        self.server = await CECServer(KodiAdapter("CEC server")).async_start(
+            ADDON.getSettingString("interface"),
+            ADDON.getSettingInt("port")
+        )
+        log("CEC server started")
 
-        try:
-            self.server = CECServer()
-            self.server.start(host, port)
-            log("CEC TCP Server started successfully")
-        except Exception as e:
-            log(f"Failed to start CEC TCP Server: {str(e)}", xbmc.LOGERROR)
-
-    def onSettingsChanged(self):  # noqa: N802
-        """Reaguje na změnu nastavení"""
-        log("Settings changed, restarting server")
-        if self.server:
-            self.server.stop()
-        self.start()
-
-    def shutdown(self):
-        """Ukončí server"""
+    async def _stop_server(self):
         if self.server:
             log("Shutting down CEC TCP Server")
-            self.server.stop()
+            self.server.close()
+            await self.server.wait_closed()
+            self.server = None
 
+    def onSettingsChanged(self):  # noqa: N802
+        log("Settings changed, restarting server")
+        run_coroutine_threadsafe(self._restart_server(), self.loop)
 
-# Hlavní funkce addonu
-if __name__ == "__main__":
-    log(f"Starting {ADDON.getAddonInfo('name')} version {ADDON.getAddonInfo('version')}")
+    async def _restart_server(self):
+        await self._stop_server()
+        await self._start_server()
 
-    # Vytvoření a spuštění služby
-    service = CecServerService()
-    service.start()
-
-    # Hlavní smyčka - běží dokud není Kodi ukončeno
-    while not service.abortRequested():
-        if service.waitForAbort(1):
-            break
-
-    # Ukončení služby
-    service.shutdown()
-    log("CEC TCP Server stopped")
+    def shutdown(self):
+        if self.server:
+            run_coroutine_threadsafe(self._stop_server(), self.loop).result(timeout=5)
+        log("Stopping asyncio loop")
+        self.loop.call_soon_threadsafe(self.loop.stop)
+        self.loop_thread.join()

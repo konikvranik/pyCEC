@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
 	<category label="30001">
-		<setting label="30002" type="ipaddress" id="host" default="0.0.0.0"/>
+		<setting label="30002" type="ipaddress" id="interface" default="0.0.0.0"/>
 		<setting label="30003" type="number" id="port" default="9998"/>
 		<setting label="30004" type="slider" id="loglevel" default="1" range="0,1,3" option="int"/>
 	</category>
