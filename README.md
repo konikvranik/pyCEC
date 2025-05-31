@@ -3,17 +3,18 @@
 ![Issue Count](https://img.shields.io/github/issues-raw/konikvranik/pyCEC)
 ![Coverage Status](https://img.shields.io/coveralls/github/konikvranik/pyCEC)
 
-# pyCEC – Python HDMI-CEC bridge for Kodi and Home Assistant
+# `pyCEC` – Python HDMI-CEC Bridge for Kodi & Home Assistant
 
-**pyCEC** is a lightweight Python bridge for controlling HDMI devices over the [CEC (Consumer Electronics Control)](https://en.wikipedia.org/wiki/Consumer_Electronics_Control) protocol. It is designed to act as a glue between media software like **Kodi** and smart home systems like **Home Assistant**. But it can serve as a python binding to the C++ [**libcec**](https://libcec.pulse-eight.com/) library too.
+The purpose of this project is:
 
-Additionally, it provides a TCP server that proxies CEC commands from the network to the local CEC adapter and the Kodi plugin that acts the same way, but uses Kodi's CEC API instead of direct calls to the libcec.
-
-To send commands over a network you can use bundled commandline client, [netcat](https://en.wikipedia.org/wiki/Netcat) or configure the pyCEC library in your code to connect to the _pyCEC_ server instead of the local CEC adapter.
+🔹 to provide an object-based API to [libcec](https://github.com/Pulse-Eight/libcec)  
+  for the [`hdmi_cec`](https://www.home-assistant.io/integrations/hdmi_cec/) module in **Home Assistant** ([primary goal](https://github.com/konikvranik/pyCEC/projects/1))  
+🔹 to offer a TCP ⇄ HDMI bridge to control CEC devices over network  
+  ([secondary goal](https://github.com/konikvranik/pyCEC/projects/2))
 
 ---
 
-## 🚀 Features
+## ✨ Features
 
 🔌 Send commands to your TV or AV receiver  
 🖥️ Monitor HDMI power and input status  
@@ -31,71 +32,78 @@ To send commands over a network you can use bundled commandline client, [netcat]
 pip install pyCEC
 ```
 
-You must also have [`libcec`](https://libcec.pulse-eight.com/) installed on your system.
+> ⚠️ **libcec must be installed** for direct-mode usage.  
+> Do **not** run `pip install cec` – it will fail. Instead, [compile libcec](https://github.com/Pulse-Eight/libcec#supported-platforms) for your OS.
 
-### On Ubuntu/Debian:
+### On Debian/Ubuntu:
 
 ```bash
 sudo apt install libcec-dev cec-utils
 ```
 
-or follow the [official installation instructions](https://github.com/Pulse-Eight/libcec#supported-platforms).
-
----
-
-## 🧪 Quick Start
+If you're using a **Python virtualenv**, make sure it can access system Python modules with:
 
 ```bash
-pythom -m pycec -h
+python3 -m venv venv --system-site-packages
 ```
 
-This will start the module and provide a list of options.
+> 💡 **Note:** When using `pyCEC` in *network mode* (TCP client), `libcec` is **not required**.
 
 ---
 
-## 🧠 Use Cases
+## 🖧 Running the Server
 
-- Turn on your TV when Kodi starts playing
-- Power off AV receiver when system suspends
-- Control TV or Amplifier remotely
-- Create Home Assistant automations triggered by HDMI input changes
-- Use IR remote to control Kodi via CEC passthrough
+You can launch the server bridge with:
+
+```bash
+python3 -m pycec
+```
+
+This binds to TCP port `9526` on all interfaces.
+
+Then:
+
+- connect from a remote `pyCEC` client using `TcpAdapter`
+- or use [Netcat](https://www.wikiwand.com/en/Netcat) to manually send CEC commands:
+
+```bash
+echo '10:04' | nc YOUR_IP 9526
+```
 
 ---
 
-## 📘 Documentation
+## 🏠 Home Assistant Integration (Multiple TVs via Telnet)
 
-- [Getting Started](#)
-- [Command Line Reference](#)
-- [Integration with Kodi](#)
-- [MQTT Setup](#)
-- [Home Assistant Example Automations](#)
+You can integrate `pyCEC` into Home Assistant via `telnet` platform, for example:
 
-*(Links coming soon)*
+```yaml
+switch:
+  - platform: telnet
+    switches:
+      some_device_id:
+        name: "Some Device Name"
+        resource: 192.168.1.123
+        port: 9526
+        command_on: '10:04'
+        command_off: '10:36'
+        command_state: '10:8f'
+        value_template: '{{ value == "01:90:00" }}'
+        timeout: 1
+```
 
----
-
-## 🧩 Related Projects
-
-- [Kodi](https://kodi.tv/)
-- [Home Assistant](https://www.home-assistant.io/)
-- [libCEC](https://libcec.pulse-eight.com/)
-- [cec-client](https://github.com/Pulse-Eight/libcec)
+This allows you to switch devices on/off or query their state.
 
 ---
 
 ## 🤝 Contributing
 
-Pull requests and issues are welcome! Whether you found a bug, have a feature request, or want to contribute code — feel free to participate.
-
-👉 [GitHub Repository](https://github.com/konikvranik/pyCEC)
+Contributions are welcome!  
+Feel free to [open an issue](https://github.com/konikvranik/pyCEC/issues) or [create a pull request](https://github.com/konikvranik/pyCEC/pulls).
 
 ---
 
 ## 📜 License
 
-MIT License. See [LICENSE](https://github.com/konikvranik/pyCEC/blob/main/LICENSE) for details.
+MIT License – see [LICENSE](./LICENSE).
 
----
-
-> Made with ❤️ by [konikvranik](https://github.com/konikvranik)
+> Made with ❤️ by [@konikvranik](https://github.com/konikvranik)
