@@ -123,3 +123,23 @@ class CecServerService(xbmc.Monitor):
         log("Stopping asyncio loop")
         self.loop.call_soon_threadsafe(self.loop.stop)
         self.loop_thread.join()
+
+
+# Hlavní funkce addonu
+if __name__ == '__main__':
+    if __name__ == "__main__":
+        log(f"Starting {ADDON.getAddonInfo('name')} version {ADDON.getAddonInfo('version')}")
+
+        # Vytvoření a spuštění služby
+        service = CecServerService()
+        service.start()
+
+        # Hlavní smyčka - běží dokud není Kodi ukončeno
+        while not service.abortRequested():
+            if service.waitForAbort(1):
+                break
+
+        # Ukončení služby
+        service.shutdown()
+        log("CEC TCP Server stopped")
+
