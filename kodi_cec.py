@@ -78,9 +78,8 @@ class CecServerService(xbmc.Monitor, cec_server.CECServer):
         self.server: Server = None
         log("CEC TCP Server service initialized")
 
-        asyncio.run_coroutine_threadsafe(self._watch_for_abort())
-
     async def async_serve(self):
+        asyncio.run_coroutine_threadsafe(self._watch_for_abort())
         await self._start_server()
         async with self.server:
             await self.server.serve_forever()

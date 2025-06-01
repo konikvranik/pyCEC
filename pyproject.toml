@@ -66,6 +66,7 @@ norecursedirs = [".git", "testing_config"]
 
 [tool.black]
 line-length = 160
+exclude = "addon\\.xml"
 
 [tool.flake8]
 max-line-length = 160
