@@ -550,8 +550,8 @@ class HDMINetwork:
         _LOGGER.debug("initializing")  # pragma: no cover
 
         await self._adapter.async_init(self._initialized_callback)
-        self._running = self._adapter.initialized
         _LOGGER.debug("Init done")  # pragma: no cover
+        self._running = self._adapter.initialized
 
     async def async_scan(self):
         _LOGGER.info("Looking for new devices...")
