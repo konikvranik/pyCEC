@@ -76,16 +76,19 @@ class CecServerService(xbmc.Monitor, cec_server.CECServer):
         log("Initializing CEC TCP Server service...")
         super().__init__()
         self.server: Server = None
+        self._running = False
         log("CEC TCP Server service initialized")
 
     async def async_serve(self):
+        self._running = True
         asyncio.run_coroutine_threadsafe(self._watch_for_abort())
         await self._start_server()
-        async with self.server:
-            await self.server.serve_forever()
-
-        self.server.close()
-        await self.server.wait_closed()
+        while self._running:
+            async with self.server:
+                await self.server.serve_forever()
+        if self.server:
+            self.server.close()
+            await self.server.wait_closed()
 
     async def _start_server(self):
         _srv = cec_server.CECServer(KodiAdapter("CEC server"))
@@ -104,7 +107,7 @@ class CecServerService(xbmc.Monitor, cec_server.CECServer):
 
     def onSettingsChanged(self):  # noqa: N802
         log("Settings changed, restarting server")
-        run_coroutine_threadsafe(self._restart_server(), self.loop)
+        run_coroutine_threadsafe(self._restart_server(), asyncio.get_running_loop())
 
     async def _restart_server(self):
         await self._stop_server()
@@ -113,8 +116,12 @@ class CecServerService(xbmc.Monitor, cec_server.CECServer):
     async def _watch_for_abort(self):
         while not service.abortRequested():
             await asyncio.sleep(1)
-        self.server.close()
-        await self.server.wait_closed()
+        self._running = False
+        await self._stop_server()
+
+    @property
+    def running(self):
+        return self._running
 
 
 log(f"Starting {ADDON.getAddonInfo('name')} version {ADDON.getAddonInfo('version')}")
