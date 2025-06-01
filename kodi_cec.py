@@ -2,7 +2,7 @@
 import asyncio
 import os
 import sys
-from asyncio import run_coroutine_threadsafe, Server
+from asyncio import Server
 
 import xbmc
 import xbmcaddon
@@ -81,7 +81,7 @@ class CecServerService(xbmc.Monitor, cec_server.CECServer):
 
     async def async_serve(self):
         self._running = True
-        asyncio.run_coroutine_threadsafe(self._watch_for_abort())
+        asyncio.create_task(self._watch_for_abort())
         await self._start_server()
         while self._running:
             async with self.server:
@@ -107,7 +107,7 @@ class CecServerService(xbmc.Monitor, cec_server.CECServer):
 
     def onSettingsChanged(self):  # noqa: N802
         log("Settings changed, restarting server")
-        run_coroutine_threadsafe(self._restart_server(), asyncio.get_running_loop())
+        asyncio.create_task(self._restart_server())
 
     async def _restart_server(self):
         await self._stop_server()
