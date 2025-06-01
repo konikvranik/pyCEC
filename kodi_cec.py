@@ -1,14 +1,9 @@
-# ... vše předtím zůstává stejné až po třídu CecServerService ...
-import asyncio
+# <llm-snippet-file>kodi_cec.py</llm-snippet-file>
 import os
 import sys
-import threading
-from asyncio import AbstractEventLoop, run_coroutine_threadsafe, Server
-
 import xbmc
 import xbmcaddon
 import xbmcvfs
-
 from pycec.commands import CecCommand
 from pycec.const import ADDR_RECORDINGDEVICE1
 from pycec.network import AbstractCecAdapter
@@ -25,19 +20,11 @@ RESOURCES_LIB_DIR = os.path.join(ADDON_PATH, "resources", "lib")
 sys.path.insert(0, LIB_DIR)
 sys.path.insert(0, RESOURCES_LIB_DIR)
 
-
 def log(msg, level=xbmc.LOGINFO):
     xbmc.log("[{}] {}".format(ADDON_ID, msg), level)
 
-
 class KodiAdapter(AbstractCecAdapter):
-    def __init__(
-        self,
-        name: str = None,
-        monitor_only: bool = None,
-        activate_source: bool = None,
-        device_type=ADDR_RECORDINGDEVICE1,
-    ):
+    def __init__(self, name: str = None, monitor_only: bool = None, activate_source: bool = None, device_type=ADDR_RECORDINGDEVICE1):
         super().__init__()
 
     def set_on_command_callback(self, callback):
@@ -64,21 +51,12 @@ class KodiAdapter(AbstractCecAdapter):
     async def async_init(self, callback: callable = None):
         pass
 
-    def _init(self, callback: callable = None):
-        log("Initializing CEC...")
-        log("Created adapter")
-        if callback:
-            callback()
-
-
 class CecServerService(xbmc.Monitor):
-
     def __init__(self):
         log("Initializing CEC TCP Server service...")
         super().__init__()
-        self.loop: AbstractEventLoop = asyncio.new_event_loop()
+        self.loop = asyncio.new_event_loop()
         self.loop_thread = threading.Thread(target=self._run_loop, daemon=True)
-        self.server: Server = None
         self.loop_thread.start()
         log("CEC TCP Server service initialized")
 
@@ -116,7 +94,7 @@ class CecServerService(xbmc.Monitor):
 
     def onSettingsChanged(self):  # noqa: N802
         log("Settings changed, restarting server")
-        run_coroutine_threadsafe(self._restart_server(), self.loop)
+        run_coroutine_threadsafe(self._restart_server(), self.loop).result(timeout=5)
 
     async def _restart_server(self):
         await self._stop_server()
@@ -128,7 +106,6 @@ class CecServerService(xbmc.Monitor):
         log("Stopping asyncio loop")
         self.loop.call_soon_threadsafe(self.loop.stop)
         self.loop_thread.join()
-
 
 log(f"Starting {ADDON.getAddonInfo('name')} version {ADDON.getAddonInfo('version')}")
 
