@@ -43,7 +43,7 @@ class KodiAdapter(AbstractCecAdapter):
         pass
 
     async def async_standby_devices(self):
-        pass
+        xbmc.executebuiltin('CECStandby')
 
     async def async_poll_device(self, device):
         pass
@@ -61,7 +61,8 @@ class KodiAdapter(AbstractCecAdapter):
         pass
 
     async def async_init(self, callback: callable = None):
-        pass
+        xbmc.executebuiltin('CECActivateSource')
+        return True
 
     def _init(self, callback: callable = None):
         log("Initializing CEC...")
