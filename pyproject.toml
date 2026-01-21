@@ -1,2 +1,41 @@
+[project]
+name = "pycec"
+version = "0.6.1"
+description = "Provide HDMI CEC devices as objects, especially for use with Home Assistant"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+keywords = ["cec", "hdmi", "home-assistant"]
+authors = [
+    { name = "Petr Vraník", email = "hpa@suteren.net" }
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Topic :: Utilities",
+    "Topic :: Home Automation",
+    "Topic :: Multimedia",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = []
+
+[project.scripts]
+pycec = "pycec.__main__:main"
+
+[project.urls]
+Repository = "https://github.com/daptify14/pyCEC"
+Upstream = "https://github.com/konikvranik/pyCEC"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pycec"]
+
 [tool.black]
 line-length = 79
